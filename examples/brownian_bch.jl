@@ -2,9 +2,9 @@ using MoonWalk
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays, LaTeXStrings, Measures
 # Example usage
 walkers = 1000
-T = 1e1
+T = 1e2
 dt= 0.01
-orders = [0, 1, 2, 3]   # Order of BCH
+orders = [2, 3]   # Order of BCH
 colors = [:blue, :red, :green, :purple, :orange, :black]
 
 selected_times = [dt, T-1.0]  # Indices of the time steps (adjust based on your N)
@@ -22,7 +22,7 @@ for (i, order) in enumerate(orders)
     plot!(fig[2], t[2:end], frobenius[2:end], legend=:bottomright, label="order $order")
 end
 
-plot!(fig[1], [dt, 0.1], 3*[dt, 0.1],  ylim=(dt, 1e1), color=:black, linestyle=:dash, label=nothing)
+plot!(fig[1], [dt, 0.1], 3*[dt, 0.1],  ylim=(dt, 1e2), color=:black, linestyle=:dash, label=nothing)
 plot!(fig[2], [dt, T], [2.40, 2.40], ylim=(1e-6, 1e1),color=:black, linestyle=:dash, label=nothing)
 annotate!(fig[2], 1.7e-3, 4e-3 , Plots.text(L"d_F(e^{\tilde{\phi}(t)}, R(t))", rotation=90))
 annotate!(fig[1], 2.3e-3, 3.3*1e-1, Plots.text(L"\langle \phi^2(t) \rangle", rotation=90))

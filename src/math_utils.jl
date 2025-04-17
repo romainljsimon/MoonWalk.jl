@@ -25,6 +25,20 @@ function omega_from_skew(R::AbstractMatrix)
     return SVector(R[3,2], R[1,3], R[2,1])
 end
 
+function sample_exponential(params::RotationParameters; shift::Float64=0.0)
+    if params.rate == 0.0
+        params.cage_time = shift + 0.0
+
+        params.escape_time = Inf
+    elseif params.rate == Inf
+        params.cage_time =  Inf
+        params.escape_time = shift + 0.0
+    else
+        params.cage_time = shift + rand(Exponential(params.rate))
+        params.escape_time = params.cage_time + params.dt
+    end
+end
+
 function euler_from_rotation(R::AbstractMatrix)
     cos_θ = clamp((tr(R) - 1)/ 2, -1.0, 1.0) 
     eigen_decomp = eigen(R)
@@ -65,4 +79,28 @@ function estimate_diffusion_coefficient(t::Vector, msd::Vector)
     coeffs = A \ msd_fit  # Solve for coefficients
 
     return coeffs[1] / 6  # D = slope / 2
+end
+
+function find_best_dϕ(ϕ, θ_test, θ, e_test, e, k)
+    k_test = nothing
+    best_m = nothing
+    min_norm = Inf
+    best_dϕ = nothing
+    dΩ = θ_test*e_test - θ*e
+    dθ = θ_test - θ
+    best_dϕ = nothing
+    
+
+    for m in -abs(k)-3:abs(k)+3
+        candidate = ϕ + dΩ +  2π * (m * e_test - k * e)
+
+        nrm = abs(norm(candidate) - norm(ϕ))
+        if nrm < min_norm
+            min_norm = nrm
+            best_dϕ = dΩ + 2π * (m * e_test - k * e)
+            best_m = m
+            
+        end
+    end
+    return best_dϕ
 end
