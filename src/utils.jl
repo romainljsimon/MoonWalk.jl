@@ -20,18 +20,6 @@ function estimate_diffusion_coefficient(t::Vector, msd::Vector)
     return coeffs[1] / 6  # D = slope / 2
 end
 
-function unwrap_home(angles::AbstractVector{T}; range = π) where T
-    unwrapped = copy(angles)
-    for i in 2:length(angles)
-        diff = unwrapped[i] - unwrapped[i-1]
-        if diff > range
-            unwrapped[i:end] .+= -diff
-        elseif diff < -range
-            unwrapped[i:end] .-= diff
-        end
-    end
-    return unwrapped
-end
 
 # Convert a 3D vector into a skew-symmetric matrix
 function skew_symmetric(v::AbstractVector{T}) where T
@@ -242,7 +230,7 @@ function solve_sde(params::RotationParameters, seed=42)
     x_matrix, y_matrix, z_matrix = zeros(walkers, N), zeros(walkers, N), zeros(walkers, N)
     frobenius = zeros(N)
     
-    for walker in 1:walkers
+    for walker in 1:params.walkers
         println("Walker ", walker)
         ϕ_matrix = zeros(N, 3)
         ϕ = copy(ϕ_0)

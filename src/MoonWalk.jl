@@ -37,6 +37,7 @@ function RotationParameters(dt::Float64, T::Float64, walkers::Int, order::Intege
 end
 
 # Utility Functions
-include("utils.jl")
+include("math_utils.jl")
+include("simulation.jl")
 
 end # module
