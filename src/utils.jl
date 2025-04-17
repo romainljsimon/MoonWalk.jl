@@ -237,11 +237,12 @@ function solve_sde(params::RotationParameters, seed=42)
     N = round(Int, params.T / params.dt)  # Number of time steps
     t = range(0, stop=params.T , length=N)
     msd = zeros(N)
+    walkers = params.walkers
     dϕ_matrix = zeros(walkers, N)  # Matrice pour stocker dϕ pour chaque walker
     x_matrix, y_matrix, z_matrix = zeros(walkers, N), zeros(walkers, N), zeros(walkers, N)
     frobenius = zeros(N)
     
-    for walker in 1:params.walkers
+    for walker in 1:walkers
         println("Walker ", walker)
         ϕ_matrix = zeros(N, 3)
         ϕ = copy(ϕ_0)

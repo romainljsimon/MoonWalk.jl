@@ -1,8 +1,7 @@
 module MoonWalk
 
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays
-using LaTeXStrings, NaNMath, DSP
-using Plots.PlotMeasures
+using NaNMath
 
 export RotationParameters, InfinityInteger, solve_sde
 

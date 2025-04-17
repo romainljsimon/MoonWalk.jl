@@ -5,7 +5,7 @@ walkers = 1000
 H = 0.8
 T = 1e1
 dt= 0.01
-rate = Inf
+scale = 1.0
 orders = [0, 1, 2, 3]   # Order of BCH
 colors = [:blue, :red, :green, :purple, :orange, :black]
 
@@ -18,7 +18,7 @@ foreground_color_legend = nothing, left_margin = [5mm 5mm], bottom_margin = [3mm
 
 for (i, order) in enumerate(orders)
     println("Order $order")
-    params = RotationParameters(dt, T, walkers, order, H)
+    params = RotationParameters(dt, T, walkers, order, H, scale)
     t, msd, dϕ_matrix, frobenius = solve_sde(params)
     plot!(fig[1], t[2:end], msd[2:end], label="order $order")
     plot!(fig[2], t[2:end], frobenius[2:end], legend=:bottomright, label="order $order")
@@ -33,4 +33,4 @@ annotate!(fig[1], 0.35, 6.2e-3, L"t")
 annotate!(fig[2], 0.35, 2e-7, L"t")
 annotate!(fig[1], 0.05, 0.02, L"\propto t")
 display(fig)
-savefig(fig, "examples/cage.pdf")
+savefig(fig, "examples/escapecage.pdf")
