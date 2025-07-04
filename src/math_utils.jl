@@ -90,11 +90,19 @@ function find_best_dϕ(ϕ, θ_test, θ, e_test, e, k)
     dθ = θ_test - θ
     best_dϕ = nothing
     
+    if abs(dθ) < π
+        k_test = k
+    elseif dθ > 0
+        k_test = k - 1
+    else
+        k_test = k + 1
 
+    end
+    #=
     for m in -abs(k)-3:abs(k)+3
-        candidate = ϕ + dΩ +  2π * (m * e_test - k * e)
+        candidate = dΩ +  2π * (m * e_test - k * e)
 
-        nrm = abs(norm(candidate) - norm(ϕ))
+        nrm = norm(candidate)
         if nrm < min_norm
             min_norm = nrm
             best_dϕ = dΩ + 2π * (m * e_test - k * e)
@@ -102,5 +110,12 @@ function find_best_dϕ(ϕ, θ_test, θ, e_test, e, k)
             
         end
     end
-    return best_dϕ
+    =#
+    #best_dϕ = dΩ 
+    best_dϕ = dΩ + 2π * (k_test * e_test - k * e)
+    norm_diff = norm(best_dϕ)
+    if norm_diff > π && e != zeros(3)
+        return error("e_test $e_test and e $e are too far apart (norm diff $norm_diff ), cannot find best dϕ")
+    end 
+    return best_dϕ, abs(dθ) > π
 end
