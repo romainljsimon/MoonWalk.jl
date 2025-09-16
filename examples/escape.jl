@@ -1,5 +1,4 @@
 using MoonWalk
-using Random, Distributions, LinearAlgebra, StaticArrays, LaTeXStrings, Measures, JLD2
 
 walkers = 100
 H = 0.8
