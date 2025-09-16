@@ -9,6 +9,6 @@ dt= 0.01
 
 params = RotationParameters(dt, T, walkers, H)
 path = "examples/cage/t$(dt)T$(T)H$(H)"
-#simulation(params; path=path)
+simulation(params; path=path)
 
 print(load_timestep(joinpath(path, "traj.jld2"), 3))
