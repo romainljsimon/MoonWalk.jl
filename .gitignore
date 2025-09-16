@@ -2,3 +2,5 @@
 *.ipynb
 Manifest.toml
 *.pdf
+old/*
+examples/*/
