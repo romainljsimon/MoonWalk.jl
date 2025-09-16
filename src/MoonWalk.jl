@@ -3,7 +3,8 @@ module MoonWalk
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf, JLD2
 using NaNMath
 
-export RotationParameters, InfinityInteger, simulation, load_timestep
+export RotationParameters, InfinityInteger, simulation, load_timestep, analyze_trajectory, ThetaMethod
+export get_time_trajectory
 
 """
     InfinityInteger
@@ -84,5 +85,6 @@ end
 include("io.jl")
 include("math_utils.jl")
 include("simulation.jl")
+include("analysis.jl")
 
 end # module
