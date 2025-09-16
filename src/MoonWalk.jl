@@ -1,9 +1,9 @@
 module MoonWalk
 
-using Random, Distributions, Plots, LinearAlgebra, StaticArrays
+using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf, JLD2
 using NaNMath
 
-export RotationParameters, InfinityInteger, solve_sde
+export RotationParameters, InfinityInteger, simulation, load_timestep
 
 """
     InfinityInteger
@@ -21,32 +21,30 @@ Structure holding all parameters required for simulating rotational dynamics.
 - `dt::Float64`: Time step of the simulation.
 - `T::Float64`: Total simulation time.
 - `walkers::Int`: Number of walkers (simulated trajectories).
-- `order::I`: Order of the BCH expansion (can be an integer or `InfinityInteger`).
 - `simulation::String`: Type of simulation ("Brownian", "Cage", "Escape").
 - `H::Float64`: Cage height (for "Cage" or "Escape" simulations).
 - `rate::Float64`: Escape rate (for "Escape").
-- `cage_time::Float64`: Time spent in the cage (for "Cage").
-- `escape_time::Float64`: Escape time (for "Escape").
+- `tᵪ::Float64`: Time spent in the cage (for "Cage").
+- `tₑ::Float64`: Escape time (for "Escape").
 """
-mutable struct RotationParameters{I<:Integer}
+mutable struct RotationParameters{D}
     dt::Float64
     T::Float64
     walkers::Int
-    order::I
     simulation::String
     H::Float64
     rate::Float64
-    cage_time::Float64
-    escape_time::Float64
+    tᵪ::MVector{D, Float64}
+    tₑ::MVector{D, Float64}
 end
 
 """
-    RotationParameters(dt, T, simulation, walkers, order, H, rate, cage_time, escape_time)
+    RotationParameters(dt, T, simulation, walkers,  H, rate, cage_time, escape_time)
 
 General constructor for the `RotationParameters` structure.
 """
-function RotationParameters(dt::Float64, T::Float64, simulation::String, walkers::Int, order::Integer, H::Float64, rate::Float64, cage_time::Float64, escape_time::Float64)
-    RotationParameters(dt, T, walkers, order, simulation, H, rate, cage_time, escape_time)
+function RotationParameters(dt::Float64, T::Float64, simulation::String, walkers::Int, H::Float64, rate::Float64, cage_time::Float64, escape_time::Float64)
+    RotationParameters(dt, T, walkers,  simulation, H, rate, cage_time, escape_time)
 end
 
 """
@@ -54,29 +52,36 @@ end
 
 Constructor for a simple Brownian simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, order::Integer)
-    RotationParameters(dt, T, walkers, order, "Brownian", 0.0, 0.0, 0.0, Inf)
+function RotationParameters(dt::Float64, T::Float64, walkers::Int)
+    tᵪ = MVector{walkers, Float64}(zeros(walkers))
+    tₑ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
+    RotationParameters(dt, T, walkers,  "Brownian", 0.0, 0.0, tᵪ, tₑ)
 end
 
 """
-    RotationParameters(dt, T, walkers, order, H)
+    RotationParameters(dt, T, walkers,  H)
 
 Constructor for a "Cage" simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, order::Integer, H::Float64)
-    RotationParameters(dt, T, walkers, order, "Cage", H, 0.0, Inf, 0.0)
+function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64)
+    tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
+    tₑ = MVector{walkers, Float64}(zeros(walkers))
+    RotationParameters(dt, T, walkers, "Cage", H, 0.0, tᵪ, tₑ)
 end
 
 """
-    RotationParameters(dt, T, walkers, order, H, rate)
+    RotationParameters(dt, T, walkers,  H, rate)
 
 Constructor for an "Escape" simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, order::Integer, H::Float64, rate::Float64)
-    RotationParameters(dt, T, walkers, order, "Escape", H, rate, 0.0, 0.0)
+function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, rate::Float64)
+    tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
+    tₑ = MVector{walkers, Float64}(zeros(walkers))
+    RotationParameters(dt, T, walkers,  "Escape", H, rate, tᵪ, tₑ)
 end
 
 # Utility Functions
+include("io.jl")
 include("math_utils.jl")
 include("simulation.jl")
 

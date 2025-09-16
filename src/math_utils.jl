@@ -25,17 +25,18 @@ function omega_from_skew(R::AbstractMatrix)
     return SVector(R[3,2], R[1,3], R[2,1])
 end
 
-function sample_exponential(params::RotationParameters; shift::Float64=0.0)
+function sample_exponential!(params::RotationParameters; rng=Xoshiro(), shift::Float64=0.0, i=collect(1:params.walkers))
     if params.rate == 0.0
-        params.cage_time = shift + 0.0
+        params.tᵪ[i] .= shift + 0.0
+        params.tₑ[i] .= Inf
 
-        params.escape_time = Inf
     elseif params.rate == Inf
-        params.cage_time =  Inf
-        params.escape_time = shift + 0.0
+        params.tᵪ[i] .=  Inf
+        params.tₑ[i] .= shift + 0.0
+    
     else
-        params.cage_time = shift + rand(Exponential(params.rate))
-        params.escape_time = params.cage_time + params.dt
+        params.tᵪ[i] = shift .+ rand(rng, Exponential(params.rate), length(i))
+        params.tₑ[i] .= params.tᵪ[i] .+ params.dt
     end
 end
 
