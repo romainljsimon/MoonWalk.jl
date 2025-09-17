@@ -7,8 +7,9 @@ function analyze_trajectory(method::TrajectoryMethod, filename; scheduler=1)
     t, ϕ = [], []
     for i in 1:N
         Ωarray = load_timestep(filename, i)
+        result = step!(method, Ωarray)
         if i ∈ scheduler
-            push!(ϕ, step!(method, Ωarray))
+            push!(ϕ, result)
             push!(t, i * dt)
         end
     end
