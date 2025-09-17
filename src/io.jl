@@ -13,9 +13,14 @@ function initialize_trajectory!(filename, params::RotationParameters)
 
 end
 
-function get_time_trajectory(filename)
+function get_length_simulation(filename)
     T, dt = load_param(filename, "T"), load_param(filename, "dt")
     N = Int(T / dt)
+    return N
+end
+
+function get_time_trajectory(filename)
+    N = get_length_simulation(filename)
     return collect(dt:dt:N*dt)
 end
 
@@ -34,6 +39,16 @@ function load_timestep(filename, time)
         out = g["$(time)"]
     end
     return out
+end
+
+function load_trajectory_walker(filename, walker)
+    N = get_length_simulation(filename)
+    Ωwalker = []
+    for i in i:N
+        Ωarray = load_timestep(filename, i)
+        push!(Ωwalker, Ωarray[walker])
+    end
+    return Ωwalker
 end
 
 function load_param(filename, key)
