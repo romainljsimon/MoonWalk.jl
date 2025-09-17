@@ -32,3 +32,28 @@ function step!(method::ThetaMethod, euler_vectors)
     end
     return ϕᵢ
 end
+
+mutable struct IntegralMethod <: TrajectoryMethod
+    Ωarray::Vector{Vector{Float64}}  # state carried across timesteps
+    ϕarray::Vector{Vector{Float64}}
+end
+
+function IntegralMethod(num_vectors::Int)
+    # initialize n with unit vectors along x-axis
+    return IntegralMethod([[0, 0, 0] for _ in 1:num_vectors], [[0, 0, 0] for _ in 1:num_vectors])
+end
+
+function step!(method::IntegralMethod, Ωarray)
+    ϕᵢ = copy(method.ϕarray)
+    for (i, Ω) in enumerate(Ωarray)
+        Rₜ = rotation_matrix_from_omega(Ω)
+        R = rotation_matrix_from_omega(method.Ωarray[i])
+        dR = transpose(R) * Rₜ
+        dθ, n =  euler_from_rotation(dR)
+        dϕ = dθ * n
+        ϕᵢ[i] += dϕ 
+    end
+    method.ϕarray = ϕᵢ
+    method.Ωarray = Ωarray
+    return ϕᵢ
+end
