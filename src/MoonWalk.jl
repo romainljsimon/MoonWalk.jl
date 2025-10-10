@@ -5,8 +5,8 @@ using NaNMath
 
 export RotationParameters, InfinityInteger, simulation, load_timestep
 export get_time_trajectory, create_log_scheduler, load_trajectory_walker
-export analyze_trajectory, ThetaMethod, IntegralMethod
-
+export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod
+export order0, order1, order2, order3
 """
     InfinityInteger
 
@@ -34,6 +34,7 @@ mutable struct RotationParameters{D}
     T::Float64
     walkers::Int
     simulation::String
+    Dᵣ::Float64
     H::Float64
     rate::Float64
     tᵪ::MVector{D, Float64}
@@ -45,8 +46,8 @@ end
 
 General constructor for the `RotationParameters` structure.
 """
-function RotationParameters(dt::Float64, T::Float64, simulation::String, walkers::Int, H::Float64, rate::Float64, cage_time::Float64, escape_time::Float64)
-    RotationParameters(dt, T, walkers,  simulation, H, rate, cage_time, escape_time)
+function RotationParameters(dt::Float64, T::Float64, simulation::String, Dᵣ::Float64, walkers::Int, H::Float64, rate::Float64, cage_time::Float64, escape_time::Float64)
+    RotationParameters(dt, T, walkers, simulation, Dᵣ, H, rate, cage_time, escape_time)
 end
 
 """
@@ -54,10 +55,10 @@ end
 
 Constructor for a simple Brownian simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int)
+function RotationParameters(dt::Float64, T::Float64, walkers::Int; Dᵣ::Float64=1.0)
     tᵪ = MVector{walkers, Float64}(zeros(walkers))
     tₑ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
-    RotationParameters(dt, T, walkers,  "Brownian", 0.0, 0.0, tᵪ, tₑ)
+    RotationParameters(dt, T, walkers,  "Brownian", Dᵣ, 0.0, 0.0, tᵪ, tₑ)
 end
 
 """
@@ -65,10 +66,10 @@ end
 
 Constructor for a "Cage" simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64)
+function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64; Dᵣ::Float64=1.0)
     tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
     tₑ = MVector{walkers, Float64}(zeros(walkers))
-    RotationParameters(dt, T, walkers, "Cage", H, 0.0, tᵪ, tₑ)
+    RotationParameters(dt, T, walkers, "Cage", Dᵣ, H, 0.0, tᵪ, tₑ)
 end
 
 """
@@ -76,10 +77,10 @@ end
 
 Constructor for an "Escape" simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, rate::Float64)
+function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, rate::Float64; Dᵣ::Float64=1.0)
     tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
     tₑ = MVector{walkers, Float64}(zeros(walkers))
-    RotationParameters(dt, T, walkers,  "Escape", H, rate, tᵪ, tₑ)
+    RotationParameters(dt, T, walkers,  "Escape", Dᵣ, H, rate, tᵪ, tₑ)
 end
 
 # Utility Functions
