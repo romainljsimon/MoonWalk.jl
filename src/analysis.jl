@@ -18,6 +18,13 @@ function analyze_trajectory(method::TrajectoryMethod, filename; scheduler=1)
     return t, ϕ, dfrob
 end
 
+function mean_frobenius_norm(ϕarray, Ωarray)
+    out = 0.0
+    for  (ϕ, Ω) in zip(ϕarray, Ωarray)
+        out += norm(rotation_matrix_from_omega(ϕ) - rotation_matrix_from_omega(Ω))
+    end
+    return out
+end
 
 function create_log_scheduler(N)
     logspaced = 10 .^(range(0,stop=log10(N),length=50))
@@ -199,18 +206,19 @@ end
 
 
 
-mutable struct ThreshThetaMethod <: TrajectoryMethod
+mutable struct ThreshThetaMethod{O<:BCHOrder} <: TrajectoryMethod
     Ωarray::Vector{Vector{Float64}}  # state carried across timesteps
     ϕarray::Vector{Vector{Float64}}
     ϕthresharray::Vector{Vector{Float64}}
     thresh::Float64
+    order::O
 end
 
 
 
-function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0)
+function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0, order::BCHOrder=order0())
     # initialize n with unit vectors along x-axis
-    return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh)
+    return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh, order)
 end
 
 function step!(method::ThreshThetaMethod, Ωarray)
@@ -221,10 +229,10 @@ function step!(method::ThreshThetaMethod, Ωarray)
         dR = transpose(R) * Rₜ
         dθ, n =  euler_from_rotation(dR)
         dϕ = dθ * n
-        ϕᵢ[i] += dϕ
+        ϕᵢ[i] += bch(ϕᵢ[i], dϕ, method.order)
         if dθ > method.thresh
             method.Ωarray[i] = Ω
-            method.ϕthresharray[i] += dϕ
+            method.ϕthresharray[i] += bch(method.ϕthresharray[i], dϕ, method.order)
         end
     end
     method.ϕarray = ϕᵢ
