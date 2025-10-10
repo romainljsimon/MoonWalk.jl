@@ -144,10 +144,11 @@ mutable struct EulerMethod <: TrajectoryMethod
     Ωarray::Vector{Vector{Float64}}
     Rarray::Vector{Matrix{Float64}}
     relance::Vector{Vector{Float64}}
+    ϕarray::Vector{Vector{Float64}}
 end
 
 function EulerMethod(num_vectors::Int)
-    return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
+    return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
 end 
 
 function step!(method::EulerMethod, Ωarray)
@@ -167,6 +168,7 @@ function step!(method::EulerMethod, Ωarray)
             method.relance[j] .+= [C[1],C[2],C[3]]
             method.Rarray[j] = I(3) 
         end 
+        method.ϕarray[j] = rotation_matrix_from_omega(method.Rarray[j])
     end
     method.Ωarray = Ωarray
     return ψᵢ ,θᵢ ,ϕᵢ
