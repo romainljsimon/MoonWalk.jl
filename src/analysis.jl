@@ -101,6 +101,76 @@ function step!(method::IntegralMethod, Ωarray)
     return ϕᵢ
 end
 
+
+mutable struct UnboundedThetaMethod <: TrajectoryMethod
+    n::Vector{Vector{Float64}}
+    θarray::Vector{Float64}
+    ψarray::Vector{Float64}
+    saut::Vector{Int}
+    ϕarray::Vector{Vector{Float64}}
+end
+
+function UnboundedThetaMethod(num_vectors::Int)
+    # initialize n with unit vectors along x-axis
+    return ThetaMethod2([[1, 0, 0] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
+end
+
+
+function step!(method::UnboundedThetaMethod, Ωarray)
+    θᵢ = copy(method.θarray)
+    ψᵢ = Vector{Float64}(undef, length(Ωarray))
+    nᵢ = copy(method.n)
+    sᵢ = copy(method.saut)
+    for (j, Ω) in enumerate(Ωarray)
+        θ = norm(Ω)
+        n = Ω / θ
+        pm = sign(dot(n, nᵢ[j]))
+        if abs(θ*pm - θᵢ[j])>3
+            sᵢ[j] += sign(θᵢ[j])
+        end
+        nᵢ[j] = n * pm
+        θᵢ[j] = θ * pm
+        ψᵢ[j] = 2*pi*sᵢ[j] + θᵢ[j]
+    end
+    method.θarray = θᵢ
+    method.ψarray = ψᵢ
+    method.n = nᵢ
+    method.saut = sᵢ
+    method.ϕarray = ψᵢ .* nᵢ 
+    return ψᵢ,nᵢ
+end
+
+mutable struct EulerMethod <: TrajectoryMethod
+    Ωarray::Vector{Vector{Float64}}
+    Rarray::Vector{Matrix{Float64}}
+    relance::Vector{Vector{Float64}}
+end
+
+function EulerMethod(num_vectors::Int)
+    return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
+end 
+
+function step!(method::EulerMethod, Ωarray)
+    ψᵢ = Vector{Float64}(undef, length(Ωarray))
+    θᵢ = Vector{Float64}(undef, length(Ωarray))
+    ϕᵢ = Vector{Float64}(undef, length(Ωarray))
+    for (j, Ω) in enumerate(Ωarray)
+        R = rotation_matrix_from_omega(method.Ωarray[j])
+        Rₜ = rotation_matrix_from_omega(Ω)
+        dR = transpose(R) * Rₜ
+        method.Rarray[j] = method.Rarray[j] * dR
+        C = euler_angles_from_rotation(method.Rarray[j])
+        ψᵢ[j] = C[1] + method.relance[j][1]
+        θᵢ[j] = C[2] + method.relance[j][2]
+        ϕᵢ[j] = C[3] + method.relance[j][3]
+        if abs(C[1]) > 1 || abs(C[2]) > 1 || abs(C[3]) > 1
+            method.relance[j] .+= [C[1],C[2],C[3]]
+            method.Rarray[j] = I(3) 
+        end 
+    end
+    method.Ωarray = Ωarray
+    return ψᵢ ,θᵢ ,ϕᵢ
+end
 function bch(ϕᵢ, dϕ, ::order0)
     return dϕ
 end
