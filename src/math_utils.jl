@@ -120,3 +120,10 @@ function find_best_dϕ(ϕ, θ_test, θ, e_test, e, k)
     end 
     return best_dϕ, abs(dθ) > π
 end
+
+function euler_angles_from_rotation(R::AbstractMatrix)
+    theta = -asin(R[3,1])
+    psi = atan(R[3,2]/cos(theta),R[3,3]/cos(theta))
+    phi = atan(R[2,1]/cos(theta),R[1,1]/cos(theta))
+    return psi,theta,phi
+end
