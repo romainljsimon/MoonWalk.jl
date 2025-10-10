@@ -5,7 +5,7 @@ using NaNMath
 
 export RotationParameters, InfinityInteger, simulation, load_timestep
 export get_time_trajectory, create_log_scheduler, load_trajectory_walker
-export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod
+export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
 export order0, order1, order2, order3
 """
     InfinityInteger
