@@ -19,6 +19,21 @@ function analyze_trajectory(method::TrajectoryMethod, filename; scheduler=1)
 end
 
 
+function analyze_log_sampling(method::TrajectoryMethod, filename)
+    T, dt = load_param(filename, "T"), load_param(filename, "dt")
+    N = Int(T / dt)
+    scheduler = create_log_scheduler(N)
+    t, ϕ, dfrob = [], [], []
+    for i in scheduler
+        Ωarray = load_timestep(filename, i)
+        result = step!(method, Ωarray)
+        push!(ϕ, result)
+        push!(t, i * dt)
+        push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
+    end
+    return t, ϕ, dfrob
+end
+
 function create_log_scheduler(N)
     logspaced = 10 .^(range(0,stop=log10(N),length=50))
     scheduler = [Int(floor(x)) for x in logspaced]
@@ -112,7 +127,7 @@ end
 
 function UnboundedThetaMethod(num_vectors::Int)
     # initialize n with unit vectors along x-axis
-    return ThetaMethod2([[1, 0, 0] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
+    return UnboundedThetaMethod([[1, 0, 0] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
 end
 
 
@@ -137,7 +152,7 @@ function step!(method::UnboundedThetaMethod, Ωarray)
     method.n = nᵢ
     method.saut = sᵢ
     method.ϕarray = ψᵢ .* nᵢ 
-    return ψᵢ,nᵢ
+    return ψᵢ,nᵢ,sᵢ
 end
 
 mutable struct EulerMethod <: TrajectoryMethod
@@ -145,16 +160,21 @@ mutable struct EulerMethod <: TrajectoryMethod
     Rarray::Vector{Matrix{Float64}}
     relance::Vector{Vector{Float64}}
     ϕarray::Vector{Vector{Float64}}
+    thresh::Float64
+    flag::Vector{Int}
+    flag_angle::Vector{Vector{Float64}}
 end
 
-function EulerMethod(num_vectors::Int)
-    return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
+function EulerMethod(num_vectors::Int; thresh::Float64=1.0)
+    return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],thresh,[0 for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
 end 
 
 function step!(method::EulerMethod, Ωarray)
     ψᵢ = Vector{Float64}(undef, length(Ωarray))
     θᵢ = Vector{Float64}(undef, length(Ωarray))
     ϕᵢ = Vector{Float64}(undef, length(Ωarray))
+    fᵢ = copy(method.flag)
+    faᵢ = copy(method.flag_angle)
     for (j, Ω) in enumerate(Ωarray)
         R = rotation_matrix_from_omega(method.Ωarray[j])
         Rₜ = rotation_matrix_from_omega(Ω)
@@ -164,15 +184,22 @@ function step!(method::EulerMethod, Ωarray)
         ψᵢ[j] = C[1] + method.relance[j][1]
         θᵢ[j] = C[2] + method.relance[j][2]
         ϕᵢ[j] = C[3] + method.relance[j][3]
-        if abs(C[1]) > 1 || abs(C[2]) > 1 || abs(C[3]) > 1
+        if abs(C[1]) > method.thresh || abs(C[2]) > method.thresh || abs(C[3]) > method.thresh
             method.relance[j] .+= [C[1],C[2],C[3]]
             method.Rarray[j] = I(3) 
+            fᵢ[j] += 1
+            faᵢ[j] = [ψᵢ[j],θᵢ[j],ϕᵢ[j]]
         end 
-        method.ϕarray[j] = rotation_matrix_from_omega(method.Rarray[j])
+        #method.ϕarray[j] = euler_from_rotation(method.Rarray[j])
     end
     method.Ωarray = Ωarray
-    return ψᵢ ,θᵢ ,ϕᵢ
+    method.flag = fᵢ
+    method.flag_angle = faᵢ
+    A = [fᵢ,faᵢ]
+    return ψᵢ ,θᵢ ,ϕᵢ, A, method.relance
 end
+
+
 function bch(ϕᵢ, dϕ, ::order0)
     return dϕ
 end
@@ -204,17 +231,19 @@ mutable struct ThreshThetaMethod <: TrajectoryMethod
     ϕarray::Vector{Vector{Float64}}
     ϕthresharray::Vector{Vector{Float64}}
     thresh::Float64
+    flag::Vector{Int}
 end
 
 
 
 function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0)
     # initialize n with unit vectors along x-axis
-    return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh)
+    return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh,[0 for _ in 1:num_vectors])
 end
 
 function step!(method::ThreshThetaMethod, Ωarray)
     ϕᵢ = copy(method.ϕthresharray)
+    fᵢ = copy(method.flag)
     for (i, Ω) in enumerate(Ωarray)
         Rₜ = rotation_matrix_from_omega(Ω)
         R = rotation_matrix_from_omega(method.Ωarray[i])
@@ -225,8 +254,25 @@ function step!(method::ThreshThetaMethod, Ωarray)
         if dθ > method.thresh
             method.Ωarray[i] = Ω
             method.ϕthresharray[i] += dϕ
+            fᵢ[i] += 1
         end
     end
+    method.flag = fᵢ
     method.ϕarray = ϕᵢ
-    return ϕᵢ
+    return ϕᵢ, fᵢ
+end
+
+function τ_seuil(flag,tarray)
+    a = 1
+    Δτ = []
+    for i in 2:1:length(flag)
+        if flag[i] - flag[i-1] !=0
+        push!(Δτ, tarray[i]-tarray[a])
+        a = i
+        end
+    end
+    if Δτ == []
+        return 0
+    end
+    return mean(Δτ)
 end

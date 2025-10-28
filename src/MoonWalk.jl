@@ -3,9 +3,9 @@ module MoonWalk
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf, JLD2
 using NaNMath
 
-export RotationParameters, InfinityInteger, simulation, load_timestep
-export get_time_trajectory, create_log_scheduler, load_trajectory_walker
-export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
+export RotationParameters, InfinityInteger, simulation, load_timesteps,euler_angles_from_rotation,create_log_scheduler, τ_seuil
+export get_time_trajectory, create_log_scheduler, load_trajectory_walker,load_timestep,step!
+export analyze_trajectory, analyze_sampling, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
 export order0, order1, order2, order3
 """
     InfinityInteger
