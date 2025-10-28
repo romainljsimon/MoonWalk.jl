@@ -4,14 +4,15 @@ function analyze_trajectory(method::TrajectoryMethod, filename; scheduler=1)
     T, dt = load_param(filename, "T"), load_param(filename, "dt")
     N = Int(T / dt)
     scheduler = set_scheduler(scheduler, N)
+    timesteps = load_timesteps(filename)
     t, ϕ, dfrob = [], [], []
-    for i in 1:N
+    for i in timesteps
         Ωarray = load_timestep(filename, i)
         result = step!(method, Ωarray)
         if i ∈ scheduler
             push!(ϕ, result)
             push!(t, i * dt)
-            #push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
+            push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
         end
     end
     return t, ϕ, dfrob
@@ -31,6 +32,14 @@ function analyze_log_sampling(method::TrajectoryMethod, filename)
         push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
     end
     return t, ϕ, dfrob
+end
+
+function mean_frobenius_norm(ϕarray, Ωarray)
+    out = 0.0
+    for  (ϕ, Ω) in zip(ϕarray, Ωarray)
+        out += norm(rotation_matrix_from_omega(ϕ) - rotation_matrix_from_omega(Ω))
+    end
+    return out
 end
 
 function create_log_scheduler(N)
@@ -60,23 +69,25 @@ end
 
 struct ThetaMethod <: TrajectoryMethod
     n::Vector{Vector{Float64}}  # state carried across timesteps
+    ϕarray::Vector{Vector{Float64}}
 end
 
 function ThetaMethod(num_vectors::Int)
     # initialize n with unit vectors along x-axis
-    return ThetaMethod([[1, 0, 0] for _ in 1:num_vectors])
+    return ThetaMethod([[1, 0, 0] for _ in 1:num_vectors], [[0.0, 0.0, 0.0] for _ in 1:num_vectors])
 end
 
 function step!(method::ThetaMethod, Ωarray)
-    ϕᵢ = Vector{Float64}(undef, length(Ωarray))
+    θᵢ = Vector{Float64}(undef, length(Ωarray))
     for (i, Ω) in enumerate(Ωarray)
         θ = norm(Ω)
         n = Ω / θ
         pm = sign(dot(n, method.n[i]))
-        ϕᵢ[i] = θ * pm
+        θᵢ[i] = θ * pm
         method.n[i] = n * pm
+        method.ϕarray[i] = θ*n
     end
-    return ϕᵢ
+    return θᵢ, n
 end
 
 abstract type BCHOrder end
@@ -85,14 +96,15 @@ struct order1 <: BCHOrder end
 struct order2 <: BCHOrder end
 struct order3 <: BCHOrder end
 
-mutable struct IntegralMethod <: TrajectoryMethod
+mutable struct IntegralMethod{O<:BCHOrder} <: TrajectoryMethod
     Ωarray::Vector{Vector{Float64}}  # state carried across timesteps
     ϕarray::Vector{Vector{Float64}}
+    order::O
 end
 
-function IntegralMethod(num_vectors::Int)
+function IntegralMethod(num_vectors::Int; order::BCHOrder=order0())
     # initialize n with unit vectors along x-axis
-    return IntegralMethod([[0, 0, 0] for _ in 1:num_vectors], [[0, 0, 0] for _ in 1:num_vectors])
+    return IntegralMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], order)
 end
 
 function step!(method::IntegralMethod, Ωarray)
@@ -103,7 +115,7 @@ function step!(method::IntegralMethod, Ωarray)
         dR = transpose(R) * Rₜ
         dθ, n =  euler_from_rotation(dR)
         dϕ = dθ * n
-        ϕᵢ[i] += dϕ 
+        ϕᵢ[i] += bch(ϕᵢ[i], dϕ, method.order)
     end
     method.ϕarray = ϕᵢ
     method.Ωarray = Ωarray
@@ -220,20 +232,21 @@ end
 
 
 
-mutable struct ThreshThetaMethod <: TrajectoryMethod
+mutable struct ThreshThetaMethod{O<:BCHOrder} <: TrajectoryMethod
     Ωarray::Vector{Vector{Float64}}  # state carried across timesteps
     ϕarray::Vector{Vector{Float64}}
     ϕthresharray::Vector{Vector{Float64}}
     thresh::Float64
     flag::Vector{Int}
+    order::O
 end
 
 
-
-function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0)
+function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0, order::BCHOrder=order0())
     # initialize n with unit vectors along x-axis
-    return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh,[0 for _ in 1:num_vectors])
+    return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh,[0 for _ in 1:num_vectors], order)
 end
+
 
 function step!(method::ThreshThetaMethod, Ωarray)
     ϕᵢ = copy(method.ϕthresharray)
@@ -244,10 +257,10 @@ function step!(method::ThreshThetaMethod, Ωarray)
         dR = transpose(R) * Rₜ
         dθ, n =  euler_from_rotation(dR)
         dϕ = dθ * n
-        ϕᵢ[i] += dϕ
-        if dθ > method.thresh
+        ϕᵢ[i] += bch(ϕᵢ[i], dϕ, method.order)
+        if abs(dθ) > method.thresh
             method.Ωarray[i] = Ω
-            method.ϕthresharray[i] += dϕ
+            method.ϕthresharray[i] += bch(method.ϕthresharray[i], dϕ, method.order)
             fᵢ[i] += 1
         end
     end
