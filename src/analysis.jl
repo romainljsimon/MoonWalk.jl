@@ -4,15 +4,14 @@ function analyze_trajectory(method::TrajectoryMethod, filename; scheduler=1)
     T, dt = load_param(filename, "T"), load_param(filename, "dt")
     N = Int(T / dt)
     scheduler = set_scheduler(scheduler, N)
-    timesteps = load_timesteps(filename)
     t, ϕ, dfrob = [], [], []
-    for i in timesteps
+    for i in 1:N
         Ωarray = load_timestep(filename, i)
         result = step!(method, Ωarray)
         if i ∈ scheduler
             push!(ϕ, result)
             push!(t, i * dt)
-            push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
+            #push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
         end
     end
     return t, ϕ, dfrob
@@ -61,25 +60,23 @@ end
 
 struct ThetaMethod <: TrajectoryMethod
     n::Vector{Vector{Float64}}  # state carried across timesteps
-    ϕarray::Vector{Vector{Float64}}
 end
 
 function ThetaMethod(num_vectors::Int)
     # initialize n with unit vectors along x-axis
-    return ThetaMethod([[1, 0, 0] for _ in 1:num_vectors], [[0.0, 0.0, 0.0] for _ in 1:num_vectors])
+    return ThetaMethod([[1, 0, 0] for _ in 1:num_vectors])
 end
 
 function step!(method::ThetaMethod, Ωarray)
-    θᵢ = Vector{Float64}(undef, length(Ωarray))
+    ϕᵢ = Vector{Float64}(undef, length(Ωarray))
     for (i, Ω) in enumerate(Ωarray)
         θ = norm(Ω)
         n = Ω / θ
         pm = sign(dot(n, method.n[i]))
-        θᵢ[i] = θ * pm
+        ϕᵢ[i] = θ * pm
         method.n[i] = n * pm
-        method.ϕarray[i] = θ*n
     end
-    return θᵢ, n
+    return ϕᵢ
 end
 
 abstract type BCHOrder end
@@ -88,17 +85,14 @@ struct order1 <: BCHOrder end
 struct order2 <: BCHOrder end
 struct order3 <: BCHOrder end
 
-mutable struct IntegralMethod{O<:BCHOrder} <: TrajectoryMethod
+mutable struct IntegralMethod <: TrajectoryMethod
     Ωarray::Vector{Vector{Float64}}  # state carried across timesteps
     ϕarray::Vector{Vector{Float64}}
-    order::O
 end
 
-
-
-function IntegralMethod(num_vectors::Int; order::BCHOrder=order0())
+function IntegralMethod(num_vectors::Int)
     # initialize n with unit vectors along x-axis
-    return IntegralMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], order)
+    return IntegralMethod([[0, 0, 0] for _ in 1:num_vectors], [[0, 0, 0] for _ in 1:num_vectors])
 end
 
 function step!(method::IntegralMethod, Ωarray)
@@ -109,7 +103,7 @@ function step!(method::IntegralMethod, Ωarray)
         dR = transpose(R) * Rₜ
         dθ, n =  euler_from_rotation(dR)
         dϕ = dθ * n
-        ϕᵢ[i] += bch(ϕᵢ[i], dϕ, method.order)
+        ϕᵢ[i] += dϕ 
     end
     method.ϕarray = ϕᵢ
     method.Ωarray = Ωarray
