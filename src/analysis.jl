@@ -4,25 +4,22 @@ function analyze_trajectory(method::TrajectoryMethod, filename; scheduler=1)
     T, dt = load_param(filename, "T"), load_param(filename, "dt")
     N = Int(T / dt)
     scheduler = set_scheduler(scheduler, N)
-    timesteps = load_timesteps(filename)
     t, ϕ, dfrob = [], [], []
-    for i in timesteps
+    for i in scheduler
         Ωarray = load_timestep(filename, i)
         result = step!(method, Ωarray)
-        if i ∈ scheduler
-            push!(ϕ, result)
-            push!(t, i * dt)
-            push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
-        end
+        push!(ϕ, result)
+        push!(t, i * dt)
+        push!(dfrob, mean_frobenius_norm(method.ϕarray, Ωarray))
+        
     end
     return t, ϕ, dfrob
 end
 
-
-function analyze_log_sampling(method::TrajectoryMethod, filename)
+function analyze_log_sampling(method::TrajectoryMethod, filename,δ)
     T, dt = load_param(filename, "T"), load_param(filename, "dt")
     N = Int(T / dt)
-    scheduler = create_log_scheduler(N)
+    scheduler = create_log_scheduler(N,δ)
     t, ϕ, dfrob = [], [], []
     for i in scheduler
         Ωarray = load_timestep(filename, i)
@@ -42,8 +39,9 @@ function mean_frobenius_norm(ϕarray, Ωarray)
     return out
 end
 
-function create_log_scheduler(N)
-    logspaced = 10 .^(range(0,stop=log10(N),length=50))
+function create_log_scheduler(N, δ)
+    #logspaced = 10 .^(range(0,stop=log10(N),length=N))
+    logspaced = 10 .^(0:δ:log10(N))
     scheduler = [Int(floor(x)) for x in logspaced]
     unique!(scheduler)
     return scheduler
@@ -133,7 +131,7 @@ end
 
 function UnboundedThetaMethod(num_vectors::Int)
     # initialize n with unit vectors along x-axis
-    return UnboundedThetaMethod([[1, 0, 0] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
+    return UnboundedThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
 end
 
 
@@ -172,7 +170,7 @@ mutable struct EulerMethod <: TrajectoryMethod
 end
 
 function EulerMethod(num_vectors::Int; thresh::Float64=1.0)
-    return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],thresh,[0 for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
+    return EulerMethod([[0., 0., 0.] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],thresh,[0 for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
 end 
 
 function step!(method::EulerMethod, Ωarray)
@@ -242,7 +240,7 @@ mutable struct ThreshThetaMethod{O<:BCHOrder} <: TrajectoryMethod
 end
 
 
-function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0, order::BCHOrder=order0())
+function ThreshThetaMethod(num_vectors::Int; thresh::Float64=0.2, order::BCHOrder=order0())
     # initialize n with unit vectors along x-axis
     return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh,[0 for _ in 1:num_vectors], order)
 end
@@ -261,6 +259,8 @@ function step!(method::ThreshThetaMethod, Ωarray)
         if abs(dθ) > method.thresh
             method.Ωarray[i] = Ω
             method.ϕthresharray[i] += bch(method.ϕthresharray[i], dϕ, method.order)
+            #method.ϕthresharray[i] += [0. , 0. , 0.]
+            #ϕᵢ[i] = [0. , 0., 0.]
             fᵢ[i] += 1
         end
     end
@@ -269,17 +269,3 @@ function step!(method::ThreshThetaMethod, Ωarray)
     return ϕᵢ, fᵢ
 end
 
-function τ_seuil(flag,tarray)
-    a = 1
-    Δτ = []
-    for i in 2:1:length(flag)
-        if flag[i] - flag[i-1] !=0
-        push!(Δτ, tarray[i]-tarray[a])
-        a = i
-        end
-    end
-    if Δτ == []
-        return 0
-    end
-    return mean(Δτ)
-end

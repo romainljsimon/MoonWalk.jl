@@ -35,9 +35,14 @@ function sample_exponential!(params::RotationParameters; rng=Xoshiro(), shift::F
         params.tₑ[i] .= shift + 0.0
     
     else
-        params.tᵪ[i] = shift .+ rand(rng, Exponential(params.rate), length(i))
+        params.tᵪ[i] = shift .+ rand(rng, Exponential(params.rate), length(i)) 
         params.tₑ[i] .= params.tᵪ[i] .+ params.dt
     end
+end
+
+function sample_power_law_jump!(params::RotationParameters; rng=Xoshiro(), shift::Float64=0.0, i=collect(1:params.walkers))
+        params.tᵪ[i] = shift .+ rand(rng, Pareto(params.α), length(i))
+        params.tₑ[i] .= params.tᵪ[i] .+ params.dt
 end
 
 function euler_from_rotation(R::AbstractMatrix)
@@ -126,4 +131,19 @@ function euler_angles_from_rotation(R::AbstractMatrix)
     psi = atan(R[3,2]/cos(theta),R[3,3]/cos(theta))
     phi = atan(R[2,1]/cos(theta),R[1,1]/cos(theta))
     return psi,theta,phi
+end
+
+function τ_seuil(flag,tarray)
+    a = 1
+    Δτ = []
+    for i in 2:1:length(flag)
+        if flag[i] - flag[i-1] !=0
+            push!(Δτ, tarray[i]-tarray[a])
+            a = i
+        end
+    end
+    if Δτ == []
+        return 0
+    end
+    return mean(Δτ[2:end])
 end

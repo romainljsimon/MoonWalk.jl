@@ -1,4 +1,4 @@
-function initialize_trajectory!(filename, params::RotationParameters, scheduler)
+ function initialize_trajectory!(filename, params::RotationParameters, scheduler)
     jldopen(filename, "w") do f
         JLD2.Group(f, "TimeSteps")
         m = JLD2.Group(f, "Params")
