@@ -10,15 +10,15 @@ end
 function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), scheduler=1)
     mkpath(path)
     trajectory_file = joinpath(path, "traj.jld2")
-    
+
     N = round(Int, params.T / params.dt)
     scheduler = set_scheduler(scheduler, N)
     R = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
     Rₜ = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
     dR = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
-    i = 1
-    initialize_trajectory!(trajectory_file, params, scheduler)
-    save_timestep!(trajectory_file, R, 0, scheduler)
+
+    file_handle = initialize_trajectory!(trajectory_file, params, scheduler)
+    save_timestep!(file_handle, R, 0, scheduler)
 
     if params.simulation == "Escape"
         sample_exponential!(params; rng=rng)
@@ -29,6 +29,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     end
 
     prog = Progress(params.walkers; desc="Simulating walkers...")
+    i = 1
     while i < N+1
 
         dΩ = sqrt(params.dt * params.Dᵣ) *randn(rng, Float64, (3, params.walkers))
@@ -64,11 +65,13 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
 
             R[walker] = R[walker] * dR[walker]
             Rₜ[walker] = Rₜ[walker] * dR[walker]
-            
+
         end
-        save_timestep!(trajectory_file, R, i, scheduler)
+        save_timestep!(file_handle, R, i, scheduler)
         i += 1
         next!(prog)
     end
+
+    close(file_handle)
     return nothing
 end

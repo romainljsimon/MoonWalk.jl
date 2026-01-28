@@ -1,17 +1,19 @@
- function initialize_trajectory!(filename, params::RotationParameters, scheduler)
-    jldopen(filename, "w") do f
-        JLD2.Group(f, "TimeSteps")
-        m = JLD2.Group(f, "Params")
-        m["walkers"] = params.walkers
-        m["H"] = params.H
-        m["rate"] = params.rate
-        m["tᵪ"] = params.tᵪ
-        m["tₑ"] = params.tₑ
-        m["dt"] = params.dt
-        m["T"] = params.T
-        m["scheduler"] = scheduler
-    end
+function initialize_trajectory!(filename, params::RotationParameters, scheduler)
+    file_handle = jldopen(filename, "w")
 
+    JLD2.Group(file_handle, "TimeSteps")
+
+    m = JLD2.Group(file_handle, "Params")
+    m["walkers"] = params.walkers
+    m["H"] = params.H
+    m["rate"] = params.rate
+    m["tᵪ"] = params.tᵪ
+    m["tₑ"] = params.tₑ
+    m["dt"] = params.dt
+    m["T"] = params.T
+    m["scheduler"] = scheduler
+
+    return file_handle
 end
 
 function get_length_simulation(filename)
@@ -25,12 +27,10 @@ function get_time_trajectory(filename)
     return collect(dt:dt:N*dt)
 end
 
-function save_timestep!(filename::String, M::Vector{<:AbstractMatrix}, time, scheduler)
+function save_timestep!(file_handle::JLD2.JLDFile{JLD2.MmapIO}, M::Vector{<:AbstractMatrix}, time, scheduler)
     if (time ∈ scheduler) || (time == 0)
         v = [prod(euler_from_rotation(m)) for m in M]
-        jldopen(filename, "a") do f
-            f["TimeSteps/$(time)"] = v
-        end
+        file_handle["TimeSteps/$(time)"] = v
     end
 end
 
