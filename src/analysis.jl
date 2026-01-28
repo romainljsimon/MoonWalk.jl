@@ -119,7 +119,7 @@ end
 
 function UnboundedThetaMethod(num_vectors::Int)
     # initialize n with unit vectors along x-axis
-    return ThetaMethod2([[1, 0, 0] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
+    return UnboundedThetaMethod([[1, 0, 0] for _ in 1:num_vectors], [0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[0 for _ in 1:num_vectors],[[0., 0., 0.] for _ in 1:num_vectors])
 end
 
 
@@ -143,7 +143,7 @@ function step!(method::UnboundedThetaMethod, Ωarray)
     method.ψarray = ψᵢ
     method.n = nᵢ
     method.saut = sᵢ
-    method.ϕarray = ψᵢ .* nᵢ 
+    method.ϕarray = ψᵢ .* nᵢ
     return ψᵢ,nᵢ
 end
 
@@ -156,7 +156,7 @@ end
 
 function EulerMethod(num_vectors::Int)
     return EulerMethod([[0, 0, 0] for _ in 1:num_vectors],[[1 0 0 ; 0 1 0 ; 0 0 1] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors],[[0.0 , 0.0 , 0.0] for _ in 1:num_vectors])
-end 
+end
 
 function step!(method::EulerMethod, Ωarray)
     ψᵢ = Vector{Float64}(undef, length(Ωarray))
@@ -173,8 +173,8 @@ function step!(method::EulerMethod, Ωarray)
         ϕᵢ[j] = C[3] + method.relance[j][3]
         if abs(C[1]) > 1 || abs(C[2]) > 1 || abs(C[3]) > 1
             method.relance[j] .+= [C[1],C[2],C[3]]
-            method.Rarray[j] = I(3) 
-        end 
+            method.Rarray[j] = I(3)
+        end
         method.ϕarray[j] = rotation_matrix_from_omega(method.Rarray[j])
     end
     method.Ωarray = Ωarray
