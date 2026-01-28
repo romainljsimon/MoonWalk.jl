@@ -47,7 +47,7 @@ end
 function load_trajectory_walker(filename, walker)
     N = get_length_simulation(filename)
     Ωwalker = []
-    for i in i:N
+    for i in 1:N
         Ωarray = load_timestep(filename, i)
         push!(Ωwalker, Ωarray[walker])
     end
