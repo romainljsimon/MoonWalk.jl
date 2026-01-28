@@ -24,8 +24,8 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
         sample_exponential!(params; rng=rng)
     end
 
-    prog = Progress(params.walkers; desc="Simulating walkers...")
     i = 1
+    prog = Progress(N; desc="Simulating walkers...")
     while i < N+1
 
         dΩ = sqrt(params.dt * params.Dᵣ) *randn(rng, Float64, (3, params.walkers))
