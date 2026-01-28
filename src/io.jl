@@ -21,6 +21,7 @@ function get_length_simulation(filename)
 end
 
 function get_time_trajectory(filename)
+    load_param(filename, "dt")
     N = get_length_simulation(filename)
     return collect(dt:dt:N*dt)
 end
