@@ -16,6 +16,31 @@ function initialize_trajectory!(filename, params::RotationParameters, scheduler)
     return file_handle
 end
 
+
+function load_omegas(filename::String)
+    file_handle = jldopen(filename)
+
+    params = file_handle["Params"]
+
+    timesteps = params["scheduler"]
+    n_walker = params["walkers"]
+    omegas = [[zeros(Float64, 3) for _ in 1:n_walker] for _ in 1:length(timesteps)]
+
+    for (i, time) in enumerate(timesteps)
+        v = file_handle["TimeSteps/ExactRotation/$(time)"]
+        for j in 1:n_walker
+            for k in 1:3
+                omegas[i][j][k] = v[j][k]
+            end
+        end
+    end
+
+    close(file_handle)
+
+    return omegas
+
+end
+
 function get_length_simulation(filename)
     T, dt = load_param(filename, "T"), load_param(filename, "dt")
     N = Int(T / dt)

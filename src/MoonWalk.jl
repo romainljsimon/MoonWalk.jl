@@ -4,7 +4,7 @@ using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, 
 using NaNMath
 
 export RotationParameters, InfinityInteger, simulation, load_timestep
-export get_time_trajectory, create_log_scheduler, load_trajectory_walker
+export get_time_trajectory, create_log_scheduler, load_trajectory_walker, load_omegas
 export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
 export CumulativeMethod, ExactRotation
 export order0, order1, order2, order3
