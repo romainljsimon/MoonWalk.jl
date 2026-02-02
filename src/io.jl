@@ -24,14 +24,12 @@ function load_omegas(filename::String)
 
     timesteps = params["scheduler"]
     n_walker = params["walkers"]
-    omegas = [[zeros(Float64, 3) for _ in 1:n_walker] for _ in 1:length(timesteps)]
+    omegas = [[zeros(SVector{3}) for _ in 1:n_walker] for _ in 1:length(timesteps)]
 
     for (i, time) in enumerate(timesteps)
         v = file_handle["TimeSteps/ExactRotation/$(time)"]
         for j in 1:n_walker
-            for k in 1:3
-                omegas[i][j][k] = v[j][k]
-            end
+            omegas[i][j] = v[j]
         end
     end
 
