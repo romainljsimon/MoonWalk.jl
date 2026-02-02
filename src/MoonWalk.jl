@@ -6,6 +6,7 @@ using NaNMath
 export RotationParameters, InfinityInteger, simulation, load_timestep
 export get_time_trajectory, create_log_scheduler, load_trajectory_walker
 export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
+export CumulativeMethod, ExactRotation
 export order0, order1, order2, order3
 """
     InfinityInteger
@@ -84,6 +85,7 @@ function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, r
 end
 
 # Utility Functions
+include("angle-definition.jl")
 include("io.jl")
 include("math_utils.jl")
 include("simulation.jl")

@@ -34,6 +34,21 @@ function save_timestep!(file_handle::JLD2.JLDFile{JLD2.MmapIO}, M::Vector{<:Abst
     end
 end
 
+function save_timestep!(file_handle::JLD2.JLDFile{JLD2.MmapIO},M::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
+
+    for definition in definitions
+        step!(definition, M)
+    end
+
+    if (time ∈ scheduler) || (time == 0)
+        for definition in definitions
+            v = get_omegas(definition)
+            name = definition.name
+            file_handle["TimeSteps/$(name)/$(time)"] = v
+        end
+    end
+end
+
 function load_timestep(filename, time)
     out = nothing
     jldopen(filename) do f
