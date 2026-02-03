@@ -12,10 +12,13 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     trajectory_file = joinpath(path, "traj.jld2")
 
     N = round(Int, params.T / params.dt)
-    scheduler = set_scheduler(scheduler, N)
     R = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
     Rₜ = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
     dR = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
+
+    nb_blocks = round(N / 1024)
+    log_spaced = [Int(x) for x in logrange(1, 1024, 11)]
+    scheduler = sort!([round(Int, x + i * 1024) for x in log_spaced for i in 0:(nb_blocks-1)])
 
     angle_definitions = [ExactRotation(params.walkers)]
     file_handle = initialize_trajectory!(trajectory_file, params, scheduler)
