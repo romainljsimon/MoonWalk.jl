@@ -35,7 +35,7 @@ function load_omegas(filename::String)
 
     close(file_handle)
 
-    return omegas
+    return omegas, timesteps
 
 end
 
