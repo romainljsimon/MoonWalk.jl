@@ -1,10 +1,13 @@
 using MoonWalk
 
-walkers = 100
+walkers = 1000
 H = 0.8
-T = 1e1
-dt= 0.01
-rate = 1.0
+T = 10.0
+dt= 0.001
 
-params = RotationParameters(dt, T, walkers, H, rate)
-simulation(params; path="examples/escape/dt$(dt)T$(T)H$(H)rate$(rate)")
+rates = [0.1, 1.0, 10.0]
+for rate in rates
+    println("Rate $rate")
+    params = RotationParameters(dt, T, walkers, H, rate)
+    simulation(params; path="examples/escape/dt$(dt)T$(T)H$(H)rate$(rate)")
+end
