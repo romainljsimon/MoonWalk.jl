@@ -19,6 +19,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     nb_blocks = round(N / 1024)
     log_spaced = [Int(x) for x in logrange(1, 1024, 11)]
     scheduler = sort!([round(Int, x + i * 1024) for x in log_spaced for i in 0:(nb_blocks-1)])
+    scheduler = scheduler[scheduler .<= N]
 
     angle_definitions = [ExactRotation(params.walkers)]
     file_handle = initialize_trajectory!(trajectory_file, params, scheduler)
