@@ -65,3 +65,77 @@ end
 function load_timesteps(filename)
     return load_param(filename, "scheduler")
 end
+
+
+function read_lammpstrj_by_molecule(filename)
+    positions = Dict{Int, Dict{Int, Dict{String, Any}}}() 
+    current_timestep = nothing
+    reading_atoms = false
+    atom_data = Float64[]
+    ncols = 9  # id type molecule x y z ix iy iz
+
+    open(filename, "r") do io
+        for line in eachline(io)
+            if startswith(line, "ITEM: TIMESTEP")
+                # lire le numéro du timestep
+                current_timestep = parse(Int, readline(io))
+
+            elseif startswith(line, "ITEM: ATOMS")
+                # on commence à lire les lignes d'atomes
+                reading_atoms = true
+                atom_data = Float64[]
+
+            elseif startswith(line, "ITEM:") && reading_atoms
+                # fin de la section ATOMS : transformer atom_data en matrice
+                natoms = length(atom_data) ÷ ncols
+                data_matrix = reshape(atom_data, ncols, natoms)'  # N_atoms × 6
+                xyz = data_matrix[:, 4:6]        # colonnes x y z
+                types = round.(Int, data_matrix[:, 2])
+                mol_ids = Int.(data_matrix[:, 3])
+                ixiyiz = round.(Int, data_matrix[:, 7:9])
+
+                # Regrouper par molécule
+                mol_dict = Dict{Int, Dict{String, Any}}()
+                for mol in unique(mol_ids)
+                    mask = mol_ids .== mol
+                    mol_dict[mol] = Dict(
+                        "xyz" => xyz[mask, :],
+                        "type" => types[mask],
+                        "image" => ixiyiz[mask, :]
+                    )
+                end
+
+                positions[current_timestep] = mol_dict
+                reading_atoms = false
+
+            elseif reading_atoms
+                # lire une ligne d'atome et ajouter au vecteur
+                append!(atom_data, parse.(Float64, split(line)))
+            end
+        end
+
+        # gérer le dernier bloc ATOMS si le fichier se termine après
+        if reading_atoms && current_timestep !== nothing
+            natoms = length(atom_data) ÷ ncols
+            data_matrix = reshape(atom_data, ncols, natoms)'
+            xyz = data_matrix[:, 4:6]
+            types = round.(Int, data_matrix[:, 2])
+            mol_ids = Int.(data_matrix[:, 3])
+            ixiyiz = round.(Int, data_matrix[:, 7:9])
+
+            mol_dict = Dict{Int, Dict{String, Any}}()
+            for mol in unique(mol_ids)
+                mask = mol_ids .== mol
+                mol_dict[mol] = Dict(
+                    "xyz" => xyz[mask, :],
+                    "type" => types[mask],
+                    "image" => ixiyiz[mask, :]
+                )
+            end
+
+            positions[current_timestep] = mol_dict
+        end
+    end
+
+    return positions
+end

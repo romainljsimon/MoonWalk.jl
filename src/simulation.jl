@@ -42,7 +42,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
                 end
             elseif i * params.dt < params.tₑ[walker] 
                 if params.simulation == "Escape"
-                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker] ./ (13 * sqrt(params.dt)))
+                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker] ./ (5 * sqrt(params.dt)))
                 elseif params.simulation == "CTRW"
                     dΩ[:, walker] = sqrt(params.dt * params.Dᵣ) * randn(rng, Float64, (3, 1))
                     dR[walker] = rotation_matrix_from_omega(dΩ[:, walker])

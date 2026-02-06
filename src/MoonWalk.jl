@@ -7,6 +7,7 @@ export RotationParameters, InfinityInteger, simulation, load_timesteps,euler_ang
 export get_time_trajectory, create_log_scheduler, load_trajectory_walker,load_timestep,step!, load_param
 export analyze_trajectory, analyze_sampling, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod, analyze_log_sampling
 export order0, order1, order2, order3
+export jld2_conv, read_lammpstrj_by_molecule, trajectoire, theta_from_xyz, rot_from_xyz
 """
     InfinityInteger
 
@@ -102,5 +103,6 @@ include("io.jl")
 include("math_utils.jl")
 include("simulation.jl")
 include("analysis.jl")
+include("molecules_read.jl")
 
 end # module

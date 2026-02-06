@@ -240,7 +240,7 @@ mutable struct ThreshThetaMethod{O<:BCHOrder} <: TrajectoryMethod
 end
 
 
-function ThreshThetaMethod(num_vectors::Int; thresh::Float64=0.2, order::BCHOrder=order0())
+function ThreshThetaMethod(num_vectors::Int; thresh::Float64=1.0, order::BCHOrder=order0())
     # initialize n with unit vectors along x-axis
     return ThreshThetaMethod([[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], [[0., 0., 0.] for _ in 1:num_vectors], thresh,[0 for _ in 1:num_vectors], order)
 end
@@ -268,4 +268,3 @@ function step!(method::ThreshThetaMethod, Ωarray)
     method.ϕarray = ϕᵢ
     return ϕᵢ, fᵢ
 end
-
