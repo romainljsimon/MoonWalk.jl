@@ -42,10 +42,11 @@ function save_timestep!(filename,M::Vector{<:AbstractMatrix}, definitions::Vecto
 
     if (time ∈ scheduler) || (time == 0)
         open(filename, "a") do file
-            write(file, "time")
+            write(file, "$time")
             for definition in definitions
-                v = get_omegas(definition)
-                write(file, ",$(v[1])")
+                vs = get_omegas(definition)
+                average_theta = mean([norm(v) for v in vs])
+                write(file, ",$average_theta")
             end
             write(file, "\n")
         end

@@ -1,7 +1,7 @@
 using MoonWalk
 
 walkers = 1000
-T = 10.0
+T = 100.0
 dt= 0.001
 
 params = RotationParameters(dt, T, walkers)
