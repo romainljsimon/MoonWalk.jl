@@ -3,17 +3,9 @@ module MoonWalk
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf, JLD2
 using NaNMath
 
-export RotationParameters, InfinityInteger, simulation, load_timestep
-export get_time_trajectory, create_log_scheduler, load_trajectory_walker, load_omegas
-export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
+export RotationParameters, simulation
 export ExactRotation, IntegralMethod, UnboundedDefinition
-export order0, order1, order2, order3
-"""
-    InfinityInteger
 
-A type used to represent an infinite integer, mainly for specifying infinite order in BCH expansions.
-"""
-struct InfinityInteger <: Integer end
 
 """
     RotationParameters
@@ -89,6 +81,5 @@ include("angle-definition.jl")
 include("io.jl")
 include("math_utils.jl")
 include("simulation.jl")
-include("analysis.jl")
 
 end # module
