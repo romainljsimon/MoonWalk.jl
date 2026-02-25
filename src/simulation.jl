@@ -20,7 +20,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     logrange(1, N, Int(number_of_decades * number_of_points_per_decade))
     scheduler = unique([round(x) for x in logrange(1, N, Int(number_of_decades * number_of_points_per_decade))])
 
-    angle_definitions = [ExactRotation(params.walkers),IntegralDefinition(params.walkers)]
+    angle_definitions = [ExactRotation(params.walkers), IntegralDefinition(params.walkers), UnboundedDefinition(params.walkers)]
 
     initialize_trajectory!(trajectory_file, params, angle_definitions)
     save_timestep!(trajectory_file, R, dR, angle_definitions, 0, scheduler)

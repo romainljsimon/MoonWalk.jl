@@ -5,4 +5,4 @@ T = 10.0
 dt= 0.001
 
 params = RotationParameters(dt, T, walkers)
-simulation(params; path="brownian/dt$(dt)T$(T)")
+simulation(params; path="brownian")
