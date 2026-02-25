@@ -26,22 +26,12 @@ function omega_from_skew(R::AbstractMatrix)
 end
 
 function sample_exponential!(params::RotationParameters; rng=Xoshiro(), shift::Float64=0.0, i=collect(1:params.walkers))
-    if params.rate == 0.0
-        params.tᵪ[i] .= shift + 0.0
-        params.tₑ[i] .= Inf
-
-    elseif params.rate == Inf
-        params.tᵪ[i] .=  Inf
-        params.tₑ[i] .= shift + 0.0
-    
-    else
-        params.tᵪ[i] = shift .+ rand(rng, Exponential(params.rate), length(i))
-        params.tₑ[i] .= params.tᵪ[i] .+ params.dt
-    end
+    params.tᵪ[i] = shift .+ rand(rng, Exponential(params.rate), length(i))
+    params.tₑ[i] .= params.tᵪ[i] .+ params.dt
 end
 
 function euler_from_rotation(R::AbstractMatrix)
-    cos_θ = clamp((tr(R) - 1)/ 2, -1.0, 1.0) 
+    cos_θ = clamp((tr(R) - 1)/ 2, -1.0, 1.0)
     eigen_decomp = eigen(R)
     eigenvalues = eigen_decomp.values
     eigenvectors = eigen_decomp.vectors
@@ -90,7 +80,7 @@ function find_best_dϕ(ϕ, θ_test, θ, e_test, e, k)
     dΩ = θ_test*e_test - θ*e
     dθ = θ_test - θ
     best_dϕ = nothing
-    
+
     if abs(dθ) < π
         k_test = k
     elseif dθ > 0
@@ -108,16 +98,16 @@ function find_best_dϕ(ϕ, θ_test, θ, e_test, e, k)
             min_norm = nrm
             best_dϕ = dΩ + 2π * (m * e_test - k * e)
             best_m = m
-            
+
         end
     end
     =#
-    #best_dϕ = dΩ 
+    #best_dϕ = dΩ
     best_dϕ = dΩ + 2π * (k_test * e_test - k * e)
     norm_diff = norm(best_dϕ)
     if norm_diff > π && e != zeros(3)
         return error("e_test $e_test and e $e are too far apart (norm diff $norm_diff ), cannot find best dϕ")
-    end 
+    end
     return best_dϕ, abs(dθ) > π
 end
 

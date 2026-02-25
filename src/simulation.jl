@@ -35,24 +35,35 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
 
         # Propagate walkers
         dΩ = sqrt(params.dt * params.Dᵣ) *randn(rng, Float64, (3, params.walkers))
-        for walker in 1:params.walkers
-            if i * params.dt < params.tᵪ[walker]
-                dR[walker] = cage(Rₜ[walker], dΩ[:, walker], params.H)
-            elseif i * params.dt < params.tₑ[walker]
-                if params.simulation == "Escape"
+
+        if params.simulation == "Brownian"
+            for walker in 1:params.walkers
+                dR[walker] = rotation_matrix_from_omega(dΩ[:, walker])
+                R[walker] = R[walker] * dR[walker]
+            end
+        elseif params.simulation == "Cage"
+            for walker in 1:params.walkers
+                dR[walker] = cage(R[walker], dΩ[:, walker], params.H)
+                R[walker] = R[walker] * dR[walker]
+            end
+        elseif params.simulation == "Escape"
+            # Rt stores the rotation matrix since the last jump
+            # This defines the cage: we refuse any Rt that would be greater than H
+            # It's reset to identity at each jump
+            for walker in 1:params.walkers
+                if i * params.dt < params.tᵪ[walker]
+                    dR[walker] = cage(Rₜ[walker], dΩ[:, walker], params.H)
+                elseif i * params.dt < params.tₑ[walker]
                     dR[walker] = rotation_matrix_from_omega(dΩ[:, walker] ./ (5 * sqrt(params.dt)))
                 else
-                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker])
+                    Rₜ[walker] = I(3)
+                    sample_exponential!(params; rng=rng, shift=i*params.dt, i=[walker])
                 end
-            else
-                Rₜ[walker] = I(3)
-                sample_exponential!(params; rng=rng, shift=i*params.dt, i=[walker])
-                continue
+                R[walker] = R[walker] * dR[walker]
+                Rₜ[walker] = Rₜ[walker] * dR[walker]
             end
-            R[walker] = R[walker] * dR[walker]
-            Rₜ[walker] = Rₜ[walker] * dR[walker]
-
         end
+
         save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler)
         i += 1
         next!(prog)
