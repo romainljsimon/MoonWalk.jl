@@ -1,10 +1,10 @@
 module MoonWalk
 
-using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf, JLD2
+using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf
 using NaNMath
 
 export RotationParameters, simulation
-export ExactRotation, IntegralMethod, UnboundedDefinition
+export ExactRotation, IntegralDefinition, UnboundedDefinition
 
 
 """
