@@ -34,10 +34,10 @@ function load_omegas(filename::String)
 end
 
 
-function save_timestep!(filename,M::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
+function save_timestep!(filename,Rs::Vector{<:AbstractMatrix},dRs::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
 
     for definition in definitions
-        step!(definition, M)
+        step!(definition, Rs, dRs)
     end
 
     if (time ∈ scheduler) || (time == 0)

@@ -11,9 +11,9 @@ function ExactRotation(n_walker::Int)
     return ExactRotation(R, "ExactRotation")
 end
 
-function step!(method::ExactRotation, M::Vector{<:AbstractMatrix})
-    for (i, m) in enumerate(M)
-        method.R[i] = m
+function step!(method::ExactRotation, Rs::Vector{<:AbstractMatrix}, dRs::Vector{<:AbstractMatrix})
+    for (i, R) in enumerate(Rs)
+        method.R[i] = R
     end
 end
 
@@ -33,13 +33,13 @@ function IntegralDefinition(n_walker::Int)
     return IntegralDefinition(R, ϕs, "Integral")
 end
 
-function step!(method::IntegralDefinition, M::Vector{<:AbstractMatrix})
-    for (i, m) in enumerate(M)
-        dR = transpose(m) * method.R[i]
+function step!(method::IntegralDefinition, Rs::Vector{<:AbstractMatrix}, dRs::Vector{<:AbstractMatrix})
+    for (i, R) in enumerate(Rs)
+        dR = dRs[i]
         dθ, n =  euler_from_rotation(dR)
         dϕ = dθ * n
         method.ϕs[i] += dϕ
-        method.R[i] = m
+        method.R[i] = R
     end
 end
 

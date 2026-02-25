@@ -23,7 +23,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     angle_definitions = [ExactRotation(params.walkers),IntegralDefinition(params.walkers)]
 
     initialize_trajectory!(trajectory_file, params, angle_definitions)
-    save_timestep!(trajectory_file, R, angle_definitions, 0, scheduler)
+    save_timestep!(trajectory_file, R, dR, angle_definitions, 0, scheduler)
 
     if params.simulation == "Escape"
         sample_exponential!(params; rng=rng)
@@ -53,7 +53,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
             Rₜ[walker] = Rₜ[walker] * dR[walker]
 
         end
-        save_timestep!(trajectory_file, R, angle_definitions, i, scheduler)
+        save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler)
         i += 1
         next!(prog)
     end
