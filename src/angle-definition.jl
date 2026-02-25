@@ -29,7 +29,7 @@ end
 
 function IntegralDefinition(n_walker::Int)
     R = [SMatrix{3,3,Float64}(I) for _ in 1:n_walker]
-    ϕs = [[1, 0, 0] for _ in 1:n_walker]
+    ϕs = [[0, 0, 0] for _ in 1:n_walker]
     return IntegralDefinition(R, ϕs, "Integral")
 end
 
