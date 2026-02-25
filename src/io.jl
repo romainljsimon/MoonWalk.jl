@@ -33,17 +33,6 @@ function load_omegas(filename::String)
 
 end
 
-function get_length_simulation(filename)
-    T, dt = load_param(filename, "T"), load_param(filename, "dt")
-    N = Int(T / dt)
-    return N
-end
-
-function get_time_trajectory(filename)
-    N = get_length_simulation(filename)
-    return collect(dt:dt:N*dt)
-end
-
 
 function save_timestep!(filename,M::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
 
@@ -61,36 +50,4 @@ function save_timestep!(filename,M::Vector{<:AbstractMatrix}, definitions::Vecto
             write(file, "\n")
         end
     end
-end
-
-function load_timestep(filename, time)
-    out = nothing
-    jldopen(filename) do f
-        g = f["TimeSteps"]
-        out = g["$(time)"]
-    end
-    return out
-end
-
-function load_trajectory_walker(filename, walker)
-    N = get_length_simulation(filename)
-    Ωwalker = []
-    for i in i:N
-        Ωarray = load_timestep(filename, i)
-        push!(Ωwalker, Ωarray[walker])
-    end
-    return Ωwalker
-end
-
-function load_param(filename, key)
-    out = nothing
-    jldopen(filename) do f
-        g = f["Params"]
-        out = g[key]
-    end
-    return out
-end
-
-function load_timesteps(filename)
-    return load_param(filename, "scheduler")
 end
