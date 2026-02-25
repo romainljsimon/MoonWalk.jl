@@ -9,7 +9,7 @@ end
 
 function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_per_decade::Int=10)
     mkpath(path)
-    trajectory_file = joinpath(path, "traj.jld2")
+    trajectory_file = joinpath(path, "traj.csv")
 
     N = round(Int, params.T / params.dt)
     R = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
@@ -21,8 +21,9 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     scheduler = unique([round(x) for x in logrange(1, N, Int(number_of_decades * number_of_points_per_decade))])
 
     angle_definitions = [ExactRotation(params.walkers)]
-    file_handle = initialize_trajectory!(trajectory_file, params, scheduler)
-    save_timestep!(file_handle, R, angle_definitions, 0, scheduler)
+
+    initialize_trajectory!(trajectory_file, params, angle_definitions)
+    save_timestep!(trajectory_file, R, angle_definitions, 0, scheduler)
 
     if params.simulation == "Escape"
         sample_exponential!(params; rng=rng)
@@ -52,11 +53,10 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
             Rₜ[walker] = Rₜ[walker] * dR[walker]
 
         end
-        save_timestep!(file_handle, R, angle_definitions, i, scheduler)
+        save_timestep!(trajectory_file, R, angle_definitions, i, scheduler)
         i += 1
         next!(prog)
     end
 
-    close(file_handle)
     return nothing
 end

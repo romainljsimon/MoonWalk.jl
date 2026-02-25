@@ -1,19 +1,13 @@
-function initialize_trajectory!(filename, params::RotationParameters, scheduler)
-    file_handle = jldopen(filename, "w")
+function initialize_trajectory!(filename, params::RotationParameters, definitions::Vector{<:AngleDefinition})
+    open(filename, "w") do file
+        write(file, "# walkers=$(params.walkers),H=$(params.H),rate=$(params.rate),T=$(params.T)\n")
 
-    JLD2.Group(file_handle, "TimeSteps")
-
-    m = JLD2.Group(file_handle, "Params")
-    m["walkers"] = params.walkers
-    m["H"] = params.H
-    m["rate"] = params.rate
-    m["tᵪ"] = params.tᵪ
-    m["tₑ"] = params.tₑ
-    m["dt"] = params.dt
-    m["T"] = params.T
-    m["scheduler"] = scheduler
-
-    return file_handle
+        write(file, "time")
+        for definition in definitions
+            write(file, ",$(definition.name)")
+            write(file, "\n")
+        end
+    end
 end
 
 
@@ -50,24 +44,21 @@ function get_time_trajectory(filename)
     return collect(dt:dt:N*dt)
 end
 
-function save_timestep!(file_handle::JLD2.JLDFile{JLD2.MmapIO}, M::Vector{<:AbstractMatrix}, time, scheduler)
-    if (time ∈ scheduler) || (time == 0)
-        v = [prod(euler_from_rotation(m)) for m in M]
-        file_handle["TimeSteps/$(time)"] = v
-    end
-end
 
-function save_timestep!(file_handle::JLD2.JLDFile{JLD2.MmapIO},M::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
+function save_timestep!(filename,M::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
 
     for definition in definitions
         step!(definition, M)
     end
 
     if (time ∈ scheduler) || (time == 0)
-        for definition in definitions
-            v = get_omegas(definition)
-            name = definition.name
-            file_handle["TimeSteps/$(name)/$(time)"] = v
+        open(filename, "a") do file
+            write(file, "time")
+            for definition in definitions
+                v = get_omegas(definition)
+                write(file, ",$(v[1])")
+            end
+            write(file, "\n")
         end
     end
 end
