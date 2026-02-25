@@ -1,18 +1,11 @@
 module MoonWalk
 
-using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf, JLD2
+using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf
 using NaNMath
 
-export RotationParameters, InfinityInteger, simulation, load_timestep
-export get_time_trajectory, create_log_scheduler, load_trajectory_walker
-export analyze_trajectory, ThetaMethod, IntegralMethod, ThreshThetaMethod, EulerMethod, UnboundedThetaMethod
-export order0, order1, order2, order3
-"""
-    InfinityInteger
+export RotationParameters, simulation
+export ExactRotation, IntegralDefinition, UnboundedDefinition
 
-A type used to represent an infinite integer, mainly for specifying infinite order in BCH expansions.
-"""
-struct InfinityInteger <: Integer end
 
 """
     RotationParameters
@@ -84,9 +77,9 @@ function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, r
 end
 
 # Utility Functions
+include("angle-definition.jl")
 include("io.jl")
 include("math_utils.jl")
 include("simulation.jl")
-include("analysis.jl")
 
 end # module
