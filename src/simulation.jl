@@ -7,7 +7,7 @@ function cage(Rₜ, dΩ, H)
     return dR
 end
 
-function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), scheduler=1)
+function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_per_decade::Int=10)
     mkpath(path)
     trajectory_file = joinpath(path, "traj.jld2")
 
@@ -16,10 +16,9 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     Rₜ = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
     dR = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
 
-    nb_blocks = round(N / 1024)
-    log_spaced = [Int(x) for x in logrange(1, 1024, 11)]
-    scheduler = sort!([round(Int, x + i * 1024) for x in log_spaced for i in 0:(nb_blocks-1)])
-    scheduler = scheduler[scheduler .<= N]
+    number_of_decades = floor(log10(N) + 1)
+    logrange(1, N, Int(number_of_decades * number_of_points_per_decade))
+    scheduler = unique([round(x) for x in logrange(1, N, Int(number_of_decades * number_of_points_per_decade))])
 
     angle_definitions = [ExactRotation(params.walkers)]
     file_handle = initialize_trajectory!(trajectory_file, params, scheduler)
@@ -33,6 +32,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     prog = Progress(N; desc="Simulating walkers...")
     while i < N+1
 
+        # Propagate walkers
         dΩ = sqrt(params.dt * params.Dᵣ) *randn(rng, Float64, (3, params.walkers))
         for walker in 1:params.walkers
             if i * params.dt < params.tᵪ[walker]
