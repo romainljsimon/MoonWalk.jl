@@ -22,6 +22,9 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
 
     angle_definitions = [ExactRotation(params.walkers), IntegralDefinition(params.walkers), UnboundedDefinition(params.walkers)]
 
+    n_point = 100
+    angle_distirbutions = [AngleDistribution(n_point) for _ in 1:length(angle_definitions)]
+
     initialize_trajectory!(trajectory_file, params, angle_definitions)
     save_timestep!(trajectory_file, R, dR, angle_definitions, 0, scheduler)
 
@@ -65,8 +68,22 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
         end
 
         save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler)
+
+        # Accumulate statistics about distributions at regular intervals
+        if i != 0 && i % 100 == 0
+            for (definition, distribution) in zip(angle_definitions, angle_distirbutions)
+                add_omegas!(distribution, get_omegas(definition))
+            end
+        end
+
         i += 1
         next!(prog)
+    end
+
+    # Write distributions
+    for (definition, distribution) in zip(angle_definitions, angle_distirbutions)
+        file_path = joinpath(path, "angle_$(definition.name).csv")
+        write_distribution(distribution, file_path)
     end
 
     return nothing

@@ -4,6 +4,7 @@ using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, 
 using NaNMath
 
 export RotationParameters, simulation
+export AngleDistribution
 export ExactRotation, IntegralDefinition, UnboundedDefinition
 
 
@@ -77,6 +78,7 @@ function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, r
 end
 
 # Utility Functions
+include("observables.jl")
 include("angle-definition.jl")
 include("io.jl")
 include("math_utils.jl")

@@ -23,7 +23,7 @@ end
 
 struct IntegralDefinition <: AngleDefinition
     R::Vector{SMatrix{3,3,Float64}}
-    ϕs::Vector{Vector{Float64}}
+    ϕs::Vector{SVector{3, Float64}}
     name::String
 end
 
@@ -49,8 +49,8 @@ end
 
 struct UnboundedDefinition <: AngleDefinition
     R::Vector{SMatrix{3,3,Float64}}
-    ϕs::Vector{Vector{Float64}}
-    ns::Vector{Vector{Float64}}
+    ϕs::Vector{SVector{3, Float64}}
+    ns::Vector{SVector{3, Float64}}
     θs::Vector{Float64}
     name::String
 end
