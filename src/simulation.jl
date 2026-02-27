@@ -26,7 +26,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     angle_distirbutions = [AngleDistribution(n_point) for _ in 1:length(angle_definitions)]
 
     initialize_trajectory!(trajectory_file, params, angle_definitions)
-    save_timestep!(trajectory_file, R, dR, angle_definitions, 0, scheduler)
+    save_timestep!(trajectory_file, R, dR, angle_definitions, 0, scheduler, params.dt)
 
     if params.simulation == "Escape"
         sample_exponential!(params; rng=rng)
@@ -77,7 +77,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
             error("Unknown simulation type")
         end
 
-        save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler)
+        save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler, params.dt)
 
         # Accumulate statistics about distributions at regular intervals
         if i != 0 && i % 100 == 0
