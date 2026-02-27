@@ -30,6 +30,10 @@ function sample_exponential!(params::RotationParameters; rng=Xoshiro(), shift::F
     params.tₑ[i] .= params.tᵪ[i] .+ params.dt
 end
 
+function sample_power_law_jump!(params::RotationParameters; rng=Xoshiro(), shift::Float64=0.0, i=collect(1:params.walkers))
+    params.tₑ[i] = shift .+ rand(rng, Pareto(params.α, 1), length(i))
+end
+
 function euler_from_rotation(R::AbstractMatrix)
     cos_θ = clamp((tr(R) - 1)/ 2, -1.0, 1.0)
     eigen_decomp = eigen(R)

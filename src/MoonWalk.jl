@@ -3,7 +3,7 @@ module MoonWalk
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf
 using NaNMath
 
-export RotationParameters, simulation
+export RotationParameters, simulation, RotationParametersCTRW
 export AngleDistribution
 export ExactRotation, IntegralDefinition, UnboundedDefinition
 
@@ -85,10 +85,10 @@ end
 
 Constructor for a "CTRW" simulation.
 """
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, α::Float64; Dᵣ::Float64=1.0)
+function RotationParametersCTRW(dt::Float64, T::Float64, walkers::Int, α::Float64; Dᵣ::Float64=1.0)
     tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
     tₑ = MVector{walkers, Float64}(zeros(walkers))
-    RotationParameters(dt, T, walkers,  "CTRW", Dᵣ, 0, 0, tᵪ, tₑ, α)
+    RotationParameters(dt, T, walkers,  "CTRW", Dᵣ, 0.0, 0.0, tᵪ, tₑ, α)
 end
 
 # Utility Functions
