@@ -11,7 +11,7 @@ function initialize_trajectory!(filename, params::RotationParameters, definition
 end
 
 
-function save_timestep!(filename,Rs::Vector{<:AbstractMatrix},dRs::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler)
+function save_timestep!(filename,Rs::Vector{<:AbstractMatrix},dRs::Vector{<:AbstractMatrix}, definitions::Vector{<:AngleDefinition}, time, scheduler, dt)
 
     for definition in definitions
         step!(definition, Rs, dRs)
@@ -19,7 +19,7 @@ function save_timestep!(filename,Rs::Vector{<:AbstractMatrix},dRs::Vector{<:Abst
 
     if (time ∈ scheduler) || (time == 0)
         open(filename, "a") do file
-            write(file, "$time")
+            write(file, "$(time * dt)")
             for definition in definitions
                 vs = get_omegas(definition)
                 average_theta = mean([norm(v) for v in vs])
