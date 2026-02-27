@@ -5,8 +5,8 @@ function initialize_trajectory!(filename, params::RotationParameters, definition
         write(file, "time")
         for definition in definitions
             write(file, ",$(definition.name)")
-            write(file, "\n")
         end
+        write(file, "\n")
     end
 end
 

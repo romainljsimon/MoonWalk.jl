@@ -36,7 +36,6 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     prog = Progress(N; desc="Simulating walkers...")
     while i < N+1
 
-        # Propagate walkers
         dΩ = sqrt(params.dt * params.Dᵣ) *randn(rng, Float64, (3, params.walkers))
 
         if params.simulation == "Brownian"
@@ -65,6 +64,17 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
                 R[walker] = R[walker] * dR[walker]
                 Rₜ[walker] = Rₜ[walker] * dR[walker]
             end
+        elseif params.simulation == "CTRW"
+            for walker in 1:params.walkers
+                # Jump
+                if i * params.dt > params.tₑ[walker]
+                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker])
+                    R[walker] = R[walker] * dR[walker]
+                    sample_power_law_jump!(params; rng=rng, shift=i*params.dt, i=[walker])
+                end
+            end
+        else
+            error("Unknown simulation type")
         end
 
         save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler)
