@@ -68,7 +68,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
             for walker in 1:params.walkers
                 # Jump
                 if i * params.dt > params.tₑ[walker]
-                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker])
+                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker]./ sqrt(params.dt))
                     R[walker] = R[walker] * dR[walker]
                     sample_power_law_jump!(params; rng=rng, shift=i*params.dt, i=[walker])
                 end
