@@ -79,6 +79,18 @@ function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, r
     RotationParameters(dt, T, walkers,  "Escape", Dᵣ, H, rate, tᵪ, tₑ, 0.0)
 end
 
+
+"""
+    RotationParameters(dt, T, walkers,  α)
+
+Constructor for a "CTRW" simulation.
+"""
+function RotationParameters(dt::Float64, T::Float64, walkers::Int, α::Float64; Dᵣ::Float64=1.0)
+    tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
+    tₑ = MVector{walkers, Float64}(zeros(walkers))
+    RotationParameters(dt, T, walkers,  "CTRW", Dᵣ, 0, 0, tᵪ, tₑ, α)
+end
+
 # Utility Functions
 include("observables.jl")
 include("angle-definition.jl")
