@@ -61,7 +61,7 @@ function step!(method::UnboundedDefinition, R::SMatrix, dR::SMatrix)
     dR = transpose(R) * method.R
     θ, n =  euler_from_rotation(dR)
     # If I go above the threshold
-    if θ > 3
+    if θ > 2
         # Cumulate
         method.ϕ += θ * n
         # And reset the origin
