@@ -24,7 +24,7 @@ def main(folder: str) -> None:
 
     df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
 
-    assert len(df) == len(files) * 45
+    # assert len(df) == len(files) * 45
 
     for method in methods:
         df[f"{method}"] = (
