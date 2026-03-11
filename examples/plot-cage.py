@@ -41,12 +41,12 @@ def main(folder: str) -> None:
     )
 
     H = 1
-    b = (-(3 * H**2 - 6) * np.sin(H) + 6 * H * np.cos(H) - H**3) / (3 * (H - np.sin(H)))
+    b = (-(3 * H**2 - 6) * np.sin(H) - 6 * H * np.cos(H) + H**3) / (3 * (H - np.sin(H)))
 
     ax = sns.lineplot(data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    # ax.axhline(y=np.sqrt(b), color="grey", linestyle="dashed")
+    ax.axhline(y=np.sqrt(b), color="grey", linestyle="dashed")
     ax.axhline(y=H, color="black", linestyle="dashed")
     plt.title("Cage")
     plt.show()
