@@ -26,20 +26,31 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
     dR = SMatrix{3,3,Float64}(I)
 
 
-    clock = 1
+    clock = 0
+    next_index_of_scheduler_for_printing = 1
     while clock <= params.T
 
-        if (clock ∈ scheduler)
-            save_timestep(trajectory_file, angle_definitions, clock)
-        end
-
-
         if isa(params, BrownianParameters)
-            # Every step, move of a random amount
-            dΩ = params.amplitude * randn(rng, Float64, 3)
+
+            time_of_next_jump = clock + rand(rng)
+
+            while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
+                save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
+
+                if next_index_of_scheduler_for_printing == length(scheduler)
+                    break
+                end
+
+                next_index_of_scheduler_for_printing += 1
+            end
+
+
+            dΩ = params.amplitude * (rand(rng, Float64, 3) .- 0.5)
             dR = rotation_matrix_from_omega(dΩ)
             R = R * dR
-            clock += 1
+
+            clock = time_of_next_jump
+
         end
 
         for definition in angle_definitions
