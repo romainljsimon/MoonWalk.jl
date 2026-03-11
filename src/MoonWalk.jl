@@ -3,7 +3,7 @@ module MoonWalk
 using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf
 using NaNMath
 
-export BrownianParameters
+export BrownianParameters, CageParameters
 export simulation
 export ExactRotation, IntegralDefinition, UnboundedDefinition
 
@@ -19,6 +19,12 @@ abstract type RotationParameters end
 struct BrownianParameters <: RotationParameters
     T::Float64
     amplitude::Float64
+end
+
+struct CageParameters <: RotationParameters
+    T::Float64
+    amplitude::Float64
+    cage_size::Float64
 end
 
 
