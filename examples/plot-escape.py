@@ -39,11 +39,12 @@ def main(folder: str) -> None:
     )
 
     H = 0.2
+    b = (-(3 * H**2 - 6) * np.sin(H) - 6 * H * np.cos(H) + H**3) / (3 * (H - np.sin(H)))
 
     ax = sns.lineplot(data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4)
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.axhline(y=H, color="black", linestyle="dashed")
+    ax.axhline(y=np.sqrt(b), color="black", linestyle="dashed")
     plt.title("Escape")
     plt.show()
 

@@ -47,7 +47,6 @@ def main(folder: str) -> None:
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.axhline(y=np.sqrt(b), color="grey", linestyle="dashed")
-    ax.axhline(y=H, color="black", linestyle="dashed")
     plt.title("Cage")
     plt.show()
 
