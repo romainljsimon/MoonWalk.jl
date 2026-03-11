@@ -17,14 +17,14 @@ import seaborn as sns
 
 sns.set(font_scale=2)
 
-methods = ["ExactRotation", "Integral", "Unbounded"]
+method_to_plot = "Unbounded"
+axes = [f"{method_to_plot}_x", f"{method_to_plot}_y", f"{method_to_plot}_z"]
 
 
-def get_brownian_percentiles(percs):
+def get_brownian(percs):
     files = glob.glob("brownian/*/*.csv")
     df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
-    time = 10000.0
-    axes = ["Unbounded_x", "Unbounded_z", "Unbounded_z"]
+    time = df["time"].max()
     ddf = df[df["time"] == time]
     ddf = ddf[axes].melt(value_vars=axes, value_name="angle").drop(columns="variable")
     ddf["normalized_angle"] = ddf["angle"] / np.std(ddf["angle"])
@@ -36,10 +36,11 @@ def get_brownian_percentiles(percs):
         }
     )
     df_loc["Simulation"] = "Brownian"
-    return df_loc
+    ddf["Simulation"] = "Brownian"
+    return ddf[["Simulation", "normalized_angle"]], df_loc
 
 
-def get_pereto_percentiles(percs):
+def get_pereto(percs):
     files = glob.glob("pareto/*/*/*.csv")
 
     df_list = []
@@ -50,8 +51,7 @@ def get_pereto_percentiles(percs):
 
     df = pd.concat(df_list).reset_index(drop=True)
 
-    time = 100000.0
-    axes = ["Unbounded_x", "Unbounded_z", "Unbounded_z"]
+    time = df["time"].max()
     ddf = df[df["time"] == time]
     ddf = (
         ddf[["alpha"] + axes]
@@ -72,23 +72,60 @@ def get_pereto_percentiles(percs):
 
     df_loc = ddf.groupby("alpha").apply(get_percs).reset_index().drop(columns="level_1")
     df_loc["Simulation"] = df_loc["alpha"].apply(lambda x: f"CTRW, alpha = {x}")
-    return df_loc.drop(columns="alpha")
+
+    ddf["Simulation"] = ddf["alpha"].apply(lambda x: f"CTRW, alpha = {x}")
+
+    return ddf[["Simulation", "alpha", "normalized_angle"]], df_loc.drop(
+        columns="alpha"
+    )
 
 
-def main(folder: str) -> None:
+def main() -> None:
     percs = np.linspace(1e-3, 1 - 1e-3, 100)
 
-    df_brownian = get_brownian_percentiles(percs)
-    df_pareto = get_pereto_percentiles(percs)
+    df_brownian, df_brownian_perc = get_brownian(percs)
+    df_pareto, df_pareto_perc = get_pereto(percs)
 
-    df_perc = pd.concat([df_brownian, df_pareto]).reset_index(drop=True)
+    # Distributions
+    df_distrib = pd.concat([df_brownian, df_pareto]).reset_index(drop=True)
+
+    hue_order = sorted(set(df_distrib["Simulation"]))
+
+    x = np.linspace(-4.5, 4.5, 200)
+    y = scipy.stats.norm.pdf(x)
+
+    ax = sns.histplot(
+        data=df_distrib,
+        x="normalized_angle",
+        hue="Simulation",
+        stat="density",
+        common_norm=False,
+        element="poly",
+        fill=False,
+        bins=20,
+        linewidth=3,
+        hue_order=hue_order,
+    )
+    ax.set_yscale("log")
+    plt.xlim([-4.5, 4.5])
+    plt.ylim([5e-4, 0.6])
+    plt.plot(x, y, linestyle="dashed", color="grey", linewidth=4)
+    plt.show()
+
+    # Percentiles
+    df_perc = pd.concat([df_brownian_perc, df_pareto_perc]).reset_index(drop=True)
 
     df_perc = df_perc.merge(
         pd.DataFrame({"percentile": percs, "theoretical": scipy.stats.norm.ppf(percs)})
     )
 
     sns.lineplot(
-        data=df_perc, x="theoretical", y="value", hue="Simulation", linewidth=4
+        data=df_perc,
+        x="theoretical",
+        y="value",
+        hue="Simulation",
+        linewidth=4,
+        hue_order=hue_order,
     )
     plt.axline((0, 0), slope=1, linestyle="dashed", color="grey")
     plt.title("QQ-plot")
