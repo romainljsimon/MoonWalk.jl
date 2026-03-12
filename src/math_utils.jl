@@ -47,7 +47,11 @@ function euler_from_rotation(R::AbstractMatrix)
     if isapprox(θ, 0.0; atol=1e-8)
         return 0.0, SVector(0.0, 0.0, 0.0)
     end
-    return θ, e
+    if θ > 0
+        return θ, e
+    else
+        return -θ, -e
+    end
 end
 
 function is_ϕ_equal_θ_plus_2kpi_e(ϕ::AbstractVector, θ::Real, e::AbstractVector; tol=1e-8)

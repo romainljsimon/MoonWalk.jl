@@ -5,7 +5,7 @@ using NaNMath
 
 export BrownianParameters, CageParameters, ParetoParameters, CageEscapeParameters
 export simulation
-export ExactRotation, IntegralDefinition, UnboundedDefinition
+export ExactRotation, IntegralDefinition, UnboundedDefinitione
 
 
 """
