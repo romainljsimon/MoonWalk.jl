@@ -7,13 +7,12 @@ function cage(Rₜ, dΩ, H)
     return dR
 end
 
-function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_per_decade::Int=10)
+function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_in_output::Int=100)
 
     mkpath(path)
     trajectory_file = joinpath(path, "traj.csv")
 
-    number_of_decades = floor(log10(params.T) + 1)
-    scheduler = unique([round(x) for x in logrange(1, params.T, Int(number_of_decades * number_of_points_per_decade))])
+    scheduler = log_spaced_interval(0.1, params.T, number_of_points_in_output)
 
     angle_definitions = [ExactRotation(), IntegralDefinition(), UnboundedDefinition()]
 
