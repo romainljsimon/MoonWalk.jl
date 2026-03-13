@@ -7,93 +7,156 @@ function cage(Rₜ, dΩ, H)
     return dR
 end
 
-function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_per_decade::Int=10)
+function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_in_output::Int=100)
+
     mkpath(path)
     trajectory_file = joinpath(path, "traj.csv")
 
-    N = round(Int, params.T / params.dt)
-    R = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
-    Rₜ = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
-    dR = [SMatrix{3,3,Float64}(I) for _ in 1:params.walkers]
+    scheduler = log_spaced_interval(0.1, params.T, number_of_points_in_output)
 
-    number_of_decades = floor(log10(N) + 1)
-    logrange(1, N, Int(number_of_decades * number_of_points_per_decade))
-    scheduler = unique([round(x) for x in logrange(1, N, Int(number_of_decades * number_of_points_per_decade))])
+    angle_definitions = [ExactRotation(), IntegralDefinition(), UnboundedDefinition()]
 
-    angle_definitions = [ExactRotation(params.walkers), IntegralDefinition(params.walkers), UnboundedDefinition(params.walkers)]
-
-    n_point = 100
-    angle_distirbutions = [AngleDistribution(n_point) for _ in 1:length(angle_definitions)]
 
     initialize_trajectory!(trajectory_file, params, angle_definitions)
-    save_timestep!(trajectory_file, R, dR, angle_definitions, 0, scheduler, params.dt)
 
-    if params.simulation == "Escape"
-        sample_exponential!(params; rng=rng)
+
+    R = SMatrix{3,3,Float64}(I)
+    dR = SMatrix{3,3,Float64}(I)
+
+    # Need to initialize for cage escape
+    if isa(params, CageEscapeParameters)
+        time_of_next_small_jump = rand(rng)
+        time_of_next_big_jump = rand(rng, Exponential(params.rate))
+        Rₜ = SMatrix{3,3,Float64}(I)
     end
 
-    i = 1
-    prog = Progress(N; desc="Simulating walkers...")
-    while i < N+1
 
-        dΩ = sqrt(params.dt * params.Dᵣ) *randn(rng, Float64, (3, params.walkers))
+    clock = 0
+    next_index_of_scheduler_for_printing = 1
+    while clock <= params.T
 
-        if params.simulation == "Brownian"
-            for walker in 1:params.walkers
-                dR[walker] = rotation_matrix_from_omega(dΩ[:, walker])
-                R[walker] = R[walker] * dR[walker]
-            end
-        elseif params.simulation == "Cage"
-            for walker in 1:params.walkers
-                dR[walker] = cage(R[walker], dΩ[:, walker], params.H)
-                R[walker] = R[walker] * dR[walker]
-            end
-        elseif params.simulation == "Escape"
-            # Rt stores the rotation matrix since the last jump
-            # This defines the cage: we refuse any Rt that would be greater than H
-            # It's reset to identity at each jump
-            for walker in 1:params.walkers
-                if i * params.dt < params.tᵪ[walker]
-                    dR[walker] = cage(Rₜ[walker], dΩ[:, walker], params.H)
-                elseif i * params.dt < params.tₑ[walker]
-                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker] ./ (5 * sqrt(params.dt)))
-                else
-                    Rₜ[walker] = I(3)
-                    sample_exponential!(params; rng=rng, shift=i*params.dt, i=[walker])
+        # Pure diffusive
+        if isa(params, BrownianParameters)
+
+            time_of_next_jump = clock + rand(rng)
+
+            while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
+                save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
+
+                if next_index_of_scheduler_for_printing == length(scheduler)
+                    break
                 end
-                R[walker] = R[walker] * dR[walker]
-                Rₜ[walker] = Rₜ[walker] * dR[walker]
+
+                next_index_of_scheduler_for_printing += 1
             end
-        elseif params.simulation == "CTRW"
-            for walker in 1:params.walkers
-                # Jump
-                if i * params.dt > params.tₑ[walker]
-                    dR[walker] = rotation_matrix_from_omega(dΩ[:, walker]./ sqrt(params.dt))
-                    R[walker] = R[walker] * dR[walker]
-                    sample_power_law_jump!(params; rng=rng, shift=i*params.dt, i=[walker])
+
+
+            dΩ = params.amplitude * (rand(rng, Float64, 3) .- 0.5)
+            dR = rotation_matrix_from_omega(dΩ)
+            R = R * dR
+
+            clock = time_of_next_jump
+
+        # Trapped in a cage
+        elseif isa(params, CageParameters)
+
+            time_of_next_jump = clock + rand(rng)
+
+            while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
+                save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
+
+                if next_index_of_scheduler_for_printing == length(scheduler)
+                    break
                 end
+
+                next_index_of_scheduler_for_printing += 1
             end
-        else
-            error("Unknown simulation type")
+
+
+            dΩ = params.amplitude * (rand(rng, Float64, 3) .- 0.5)
+            dR = rotation_matrix_from_omega(dΩ)
+
+            # How much we moved since the origin
+            θ, _ = euler_from_rotation(R * dR)
+            if abs(θ) > params.cage_size
+                dR = SMatrix{3,3,Float64}(I)
+            end
+
+            R = R * dR
+
+            clock = time_of_next_jump
+
+        # Jump according to Pareto distribution
+        elseif isa(params, ParetoParameters)
+
+            time_of_next_jump = clock + rand(rng, Pareto(params.α, 1))
+
+            while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
+                save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
+
+                if next_index_of_scheduler_for_printing == length(scheduler)
+                    break
+                end
+
+                next_index_of_scheduler_for_printing += 1
+            end
+
+            dΩ = params.amplitude * (rand(rng, Float64, 3) .- 0.5)
+            dR = rotation_matrix_from_omega(dΩ)
+            R = R * dR
+
+            clock = time_of_next_jump
+
+        # Cage escape
+        elseif isa(params, CageEscapeParameters)
+
+            time_of_next_jump = min(time_of_next_small_jump, time_of_next_big_jump)
+
+            while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
+                save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
+
+                if next_index_of_scheduler_for_printing == length(scheduler)
+                    break
+                end
+
+                next_index_of_scheduler_for_printing += 1
+            end
+
+            # Stay in cage
+            if time_of_next_small_jump < time_of_next_big_jump
+                dΩ = params.amplitude_small * (rand(rng, Float64, 3) .- 0.5)
+                dR = rotation_matrix_from_omega(dΩ)
+
+                # How much we moved since the origin
+                θ, _ = euler_from_rotation(Rₜ * dR)
+                if abs(θ) > params.cage_size
+                    dR = SMatrix{3,3,Float64}(I)
+                end
+
+                clock = time_of_next_small_jump
+                time_of_next_small_jump += rand(rng)
+            # Larger jump
+            else
+                dΩ = params.amplitude_large * (rand(rng, Float64, 3) .- 0.5)
+                dR = rotation_matrix_from_omega(dΩ)
+
+                # Reset origin for the cage
+                Rₜ = SMatrix{3,3,Float64}(I)
+
+                clock = time_of_next_big_jump
+                time_of_next_small_jump = clock + rand(rng)
+                time_of_next_big_jump = clock + rand(rng, Exponential(params.rate))
+            end
+
+            R = R * dR
+            Rₜ = Rₜ * dR
         end
 
-        save_timestep!(trajectory_file, R, dR, angle_definitions, i, scheduler, params.dt)
 
-        # Accumulate statistics about distributions at regular intervals
-        if i != 0 && i % 100 == 0
-            for (definition, distribution) in zip(angle_definitions, angle_distirbutions)
-                add_omegas!(distribution, get_omegas(definition))
-            end
+        for definition in angle_definitions
+            step!(definition, R, dR)
         end
 
-        i += 1
-        next!(prog)
-    end
-
-    # Write distributions
-    for (definition, distribution) in zip(angle_definitions, angle_distirbutions)
-        file_path = joinpath(path, "angle_$(definition.name).csv")
-        write_distribution(distribution, file_path)
     end
 
     return nothing

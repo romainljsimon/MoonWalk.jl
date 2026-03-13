@@ -1,90 +1,80 @@
 abstract type AngleDefinition end
 
 
-struct ExactRotation <: AngleDefinition
-    R::Vector{SMatrix{3,3,Float64}}
+mutable struct ExactRotation <: AngleDefinition
+    R::SMatrix{3,3,Float64}
     name::String
 end
 
-function ExactRotation(n_walker::Int)
-    R = [SMatrix{3,3,Float64}(I) for _ in 1:n_walker]
+function ExactRotation()
+    R = SMatrix{3,3,Float64}(I)
     return ExactRotation(R, "ExactRotation")
 end
 
-function step!(method::ExactRotation, Rs::Vector{<:AbstractMatrix}, dRs::Vector{<:AbstractMatrix})
-    for (i, R) in enumerate(Rs)
-        method.R[i] = R
-    end
+function step!(method::ExactRotation, R::SMatrix, dR::SMatrix)
+    method.R = R
 end
 
-function get_omegas(method::ExactRotation)
-    return [prod(euler_from_rotation(m)) for m in method.R]
+function get_omega(method::ExactRotation)
+    return prod(euler_from_rotation(method.R))
 end
 
-struct IntegralDefinition <: AngleDefinition
-    R::Vector{SMatrix{3,3,Float64}}
-    ϕs::Vector{SVector{3, Float64}}
+mutable struct IntegralDefinition <: AngleDefinition
+    ϕ::SVector{3, Float64}
     name::String
 end
 
-function IntegralDefinition(n_walker::Int)
-    R = [SMatrix{3,3,Float64}(I) for _ in 1:n_walker]
-    ϕs = [[0, 0, 0] for _ in 1:n_walker]
-    return IntegralDefinition(R, ϕs, "Integral")
+function IntegralDefinition()
+    ϕ = [0, 0, 0]
+    return IntegralDefinition(ϕ, "Integral")
 end
 
-function step!(method::IntegralDefinition, Rs::Vector{<:AbstractMatrix}, dRs::Vector{<:AbstractMatrix})
-    for (i, R) in enumerate(Rs)
-        dR = dRs[i]
-        dθ, n =  euler_from_rotation(dR)
-        dϕ = dθ * n
-        method.ϕs[i] += dϕ
-        method.R[i] = R
-    end
+function step!(method::IntegralDefinition, R::SMatrix, dR::SMatrix)
+    dθ, n =  euler_from_rotation(dR)
+    dϕ = dθ * n
+    method.ϕ += dϕ
 end
 
-function get_omegas(method::IntegralDefinition)
-    return method.ϕs
+function get_omega(method::IntegralDefinition)
+    return method.ϕ
 end
 
-struct UnboundedDefinition <: AngleDefinition
-    R::Vector{SMatrix{3,3,Float64}}
-    ϕs::Vector{SVector{3, Float64}}
-    ns::Vector{SVector{3, Float64}}
-    θs::Vector{Float64}
+mutable struct UnboundedDefinition <: AngleDefinition
+    R::SMatrix{3,3,Float64}
+    ϕ::SVector{3, Float64}
+    n::SVector{3, Float64}
+    θ::Float64
     name::String
 end
 
-function UnboundedDefinition(n_walker::Int)
-    R = [SMatrix{3,3,Float64}(I) for _ in 1:n_walker]
-    ϕs = [[0, 0, 0] for _ in 1:n_walker]
-    ns = [[1, 0, 0] for _ in 1:n_walker]
-    θs = [0.0 for _ in 1:n_walker]
-    return UnboundedDefinition(R, ϕs, ns, θs, "Unbounded")
+function UnboundedDefinition()
+    R = SMatrix{3,3,Float64}(I)
+    ϕ = [0, 0, 0]
+    n = [1, 0, 0]
+    θ = 0.0
+    return UnboundedDefinition(R, ϕ, n, θ, "Unbounded")
 end
 
-function step!(method::UnboundedDefinition, Rs::Vector{<:AbstractMatrix}, dRs::Vector{<:AbstractMatrix})
-    for (i, R) in enumerate(Rs)
-        # This is the rotation matrix between the current position
-        # and an origin defined by R[i]
-        dR = transpose(R) * method.R[i]
-        θ, n =  euler_from_rotation(dR)
-        # If I go above the threshold
-        if θ > 3
-            # Cumulate
-            method.ϕs[i] += θ * n
-            # And reset the origin
-            method.R[i] = R
-            method.θs[i] = 0
-            method.ns[i] = n
-        else
-            method.θs[i] = θ
-            method.ns[i] = n
-        end
+function step!(method::UnboundedDefinition, R::SMatrix, dR::SMatrix)
+    # This is the rotation matrix between the current position
+    # and an origin defined by the method's R
+    dR = transpose(R) * method.R
+    θ, n =  euler_from_rotation(dR)
+    # If I go above the threshold
+    if θ > 2
+        # Cumulate
+        method.ϕ += θ * n
+        # And reset the origin
+        method.R = R
+        method.θ = 0
+        method.n = n
+    else
+        method.θ = θ
+        method.n = n
     end
 end
 
-function get_omegas(method::UnboundedDefinition)
-    ϕs_from_last_origin = method.θs .* method.ns
-    return method.ϕs .+ ϕs_from_last_origin
+function get_omega(method::UnboundedDefinition)
+    ϕ_from_last_origin = method.θ * method.n
+    return method.ϕ + ϕ_from_last_origin
 end
