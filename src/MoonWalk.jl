@@ -1,98 +1,47 @@
 module MoonWalk
 
-using Random, Distributions, Plots, LinearAlgebra, StaticArrays, ProgressMeter, Printf
-using NaNMath
+using Random, Distributions, Plots, LinearAlgebra, StaticArrays
 
-export RotationParameters, simulation, RotationParametersCTRW
-export AngleDistribution
-export ExactRotation, IntegralDefinition, UnboundedDefinition
+export BrownianParameters, CageParameters, ParetoParameters, CageEscapeParameters
+export simulation
+export ExactRotation, IntegralDefinition, UnboundedDefinitione
 
 
 """
     RotationParameters
 
 Structure holding all parameters required for simulating rotational dynamics.
-
-# Fields
-- `dt::Float64`: Time step of the simulation.
-- `T::Float64`: Total simulation time.
-- `walkers::Int`: Number of walkers (simulated trajectories).
-- `simulation::String`: Type of simulation ("Brownian", "Cage", "Escape").
-- `H::Float64`: Cage height (for "Cage" or "Escape" simulations).
-- `rate::Float64`: Escape rate (for "Escape").
-- `tᵪ::Float64`: Time spent in the cage (for "Cage").
-- `tₑ::Float64`: Escape time (for "Escape").
-- `α::Float64`: Exponant for the power law waiting times distribution (for "CTRW")
 """
-mutable struct RotationParameters{D}
-    dt::Float64
+
+abstract type RotationParameters end
+
+struct BrownianParameters <: RotationParameters
     T::Float64
-    walkers::Int
-    simulation::String
-    Dᵣ::Float64
-    H::Float64
+    amplitude::Float64
+end
+
+struct CageParameters <: RotationParameters
+    T::Float64
+    amplitude::Float64
+    cage_size::Float64
+end
+
+struct ParetoParameters <: RotationParameters
+    T::Float64
+    amplitude::Float64
+    α::Float16
+end
+
+struct CageEscapeParameters <: RotationParameters
+    T::Float64
+    amplitude_small::Float64
+    amplitude_large::Float64
     rate::Float64
-    tᵪ::MVector{D, Float64}
-    tₑ::MVector{D, Float64}
-    α::Float64
+    cage_size::Float64
 end
 
-"""
-    RotationParameters(dt, T, simulation, walkers,  H, rate, cage_time, escape_time)
-
-General constructor for the `RotationParameters` structure.
-"""
-function RotationParameters(dt::Float64, T::Float64, simulation::String, Dᵣ::Float64, walkers::Int, H::Float64, rate::Float64, cage_time::Float64, escape_time::Float64, α::Float64)
-    RotationParameters(dt, T, walkers, simulation, Dᵣ, H, rate, cage_time, escape_time, α)
-end
-
-"""
-    RotationParameters(dt, T, walkers, order)
-
-Constructor for a simple Brownian simulation.
-"""
-function RotationParameters(dt::Float64, T::Float64, walkers::Int; Dᵣ::Float64=1.0)
-    tᵪ = MVector{walkers, Float64}(zeros(walkers))
-    tₑ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
-    RotationParameters(dt, T, walkers,  "Brownian", Dᵣ, 0.0, 0.0, tᵪ, tₑ, 0.0)
-end
-
-"""
-    RotationParameters(dt, T, walkers,  H)
-
-Constructor for a "Cage" simulation.
-"""
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64; Dᵣ::Float64=1.0)
-    tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
-    tₑ = MVector{walkers, Float64}(zeros(walkers))
-    RotationParameters(dt, T, walkers, "Cage", Dᵣ, H, 0.0, tᵪ, tₑ, 0.0)
-end
-
-"""
-    RotationParameters(dt, T, walkers,  H, rate)
-
-Constructor for an "Escape" simulation.
-"""
-function RotationParameters(dt::Float64, T::Float64, walkers::Int, H::Float64, rate::Float64; Dᵣ::Float64=1.0)
-    tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
-    tₑ = MVector{walkers, Float64}(zeros(walkers))
-    RotationParameters(dt, T, walkers,  "Escape", Dᵣ, H, rate, tᵪ, tₑ, 0.0)
-end
-
-
-"""
-    RotationParameters(dt, T, walkers,  α)
-
-Constructor for a "CTRW" simulation.
-"""
-function RotationParametersCTRW(dt::Float64, T::Float64, walkers::Int, α::Float64; Dᵣ::Float64=1.0)
-    tᵪ = MVector{walkers, Float64}([Inf for _ in 1:walkers])
-    tₑ = MVector{walkers, Float64}(zeros(walkers))
-    RotationParameters(dt, T, walkers,  "CTRW", Dᵣ, 0.0, 0.0, tᵪ, tₑ, α)
-end
 
 # Utility Functions
-include("observables.jl")
 include("angle-definition.jl")
 include("io.jl")
 include("math_utils.jl")
