@@ -7,7 +7,7 @@ function cage(Rₜ, dΩ, H)
     return dR
 end
 
-function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_in_output::Int=100)
+function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_in_output::Int=100, save_positions::Bool=false)
 
     mkpath(path)
     trajectory_file = joinpath(path, "traj.csv")
@@ -19,6 +19,12 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
 
     initialize_trajectory!(trajectory_file, params, angle_definitions)
 
+    if save_positions
+        position_files = joinpath(path, "positions.csv")
+        open(position_files, "w") do file
+            write(file, "time,x,y,z\n")
+        end
+    end
 
     R = SMatrix{3,3,Float64}(I)
     dR = SMatrix{3,3,Float64}(I)
@@ -135,6 +141,8 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
 
                 clock = time_of_next_small_jump
                 time_of_next_small_jump += rand(rng)
+
+                Rₜ = Rₜ * dR
             # Larger jump
             else
                 dΩ = params.amplitude_large * (rand(rng, Float64, 3) .- 0.5)
@@ -149,12 +157,18 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
             end
 
             R = R * dR
-            Rₜ = Rₜ * dR
         end
 
 
         for definition in angle_definitions
             step!(definition, R, dR)
+        end
+
+        if save_positions
+            xyz = R * [1, 0, 0]
+            open(position_files, "a") do file
+                write(file, "$clock,$(xyz[1]),$(xyz[2]),$(xyz[3])\n")
+            end
         end
 
     end
