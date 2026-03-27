@@ -14,42 +14,81 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-sns.set(font_scale=2)
+from utils import (
+    METHODS,
+    get_rmsd_dataframe,
+    plateau_from_cage_size,
+    get_diffusion_coefficient,
+)
 
-methods = ["ExactRotation", "Integral", "Unbounded"]
+sns.set(font_scale=2)
 
 
 def main(folder: str) -> None:
-    files = glob.glob(f"{folder}/**/*.csv")
+    files = glob.glob(f"{folder}/*/*/*.csv")
 
-    df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
+    df_list = []
+    for f in files:
+        ddf = pd.read_csv(f)
+        ddf["rate"] = float(f.split("/")[-3])
+        df_list.append(ddf)
 
-    for method in methods:
-        df[f"{method}"] = (
-            df[f"{method}_x"] ** 2 + df[f"{method}_y"] ** 2 + df[f"{method}_z"] ** 2
-        )
+    df = pd.concat(df_list).reset_index(drop=True)
 
-    df_rmsd = (
-        df[["time"] + methods]
-        .melt(id_vars="time", value_vars=methods, var_name="Definition")
-        .groupby(["time", "Definition"])
-        .apply(lambda x: np.sqrt(np.mean(x)))
-        .rename("RMSD")
+    id_columns = ["time", "rate"]
+
+    df_rmsd = get_rmsd_dataframe(df, id_columns)
+
+    cage_size = 0.1
+    plateau = plateau_from_cage_size(cage_size)
+
+    # Largest rate, look at all definitions
+    rate = df_rmsd["rate"].max()
+    ax = sns.lineplot(
+        data=df_rmsd[df_rmsd["rate"] == rate],
+        x="time",
+        y="RMSD",
+        hue="Definition",
+        linewidth=4,
+    )
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    plt.title(f"Escape - rate = {rate}")
+    plt.show()
+
+    # All rates, unbounded
+    ax = sns.lineplot(
+        data=df_rmsd.query("Definition == 'Unbounded'"),
+        x="time",
+        y="RMSD",
+        hue="rate",
+        linewidth=4,
+    )
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    plt.title("Escape")
+    plt.show()
+
+    df_D = (
+        df_rmsd.groupby(["rate", "Definition"])
+        .apply(get_diffusion_coefficient)
+        .rename("D")
         .reset_index()
     )
 
-    H = 0.2
-    b = (-(3 * H**2 - 6) * np.sin(H) - 6 * H * np.cos(H) + H**3) / (3 * (H - np.sin(H)))
-
-    ax = sns.lineplot(data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4)
+    ax = sns.scatterplot(
+        data=df_D[df_D["Definition"].isin(["Integral", "Unbounded"])],
+        x="rate",
+        y="D",
+        hue="Definition",
+    )
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(b), color="black", linestyle="dashed")
-    plt.title("Escape")
     plt.show()
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit(f"Usage: {sys.argv[0]} folder")
-    main(sys.argv[1])
+    folder = "../production/escape/"
+    main(folder)
