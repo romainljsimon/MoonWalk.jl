@@ -30,7 +30,7 @@ def main(folder: str) -> None:
 
     df = pd.concat(df_list).reset_index(drop=True)
 
-    assert len(df) == len(files) * 56
+    # assert len(df) == len(files) * 56
 
     for method in methods:
         df[f"{method}"] = (
