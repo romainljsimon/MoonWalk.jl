@@ -28,8 +28,11 @@ end
 
 struct ParetoParameters <: RotationParameters
     T::Float64
-    amplitude::Float64
+    amplitude_small::Float64
+    amplitude_large::Float64
     α::Float16
+    cage_size::Float64
+    τ::Float64
 end
 
 struct CageEscapeParameters <: RotationParameters
