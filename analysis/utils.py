@@ -35,7 +35,7 @@ def get_diffusion_coefficient(
 ) -> float:
     ddf["MSD"] = ddf["RMSD"] ** 2
     ddf["MSD_over_time"] = ddf["MSD"] / ddf["time"]
-    D = np.mean(ddf["MSD_over_time"][-10:])
+    D = np.mean(ddf["MSD_over_time"][-7:])
 
     # ax = sns.lineplot(data=ddf, x="time", y="MSD_over_time")
     # ax.set_xscale("log")

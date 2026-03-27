@@ -44,6 +44,7 @@ def main(folder: str) -> None:
 
     # Largest rate, look at all definitions
     rate = df_rmsd["rate"].max()
+    rate = 10000
     ax = sns.lineplot(
         data=df_rmsd[df_rmsd["rate"] == rate],
         x="time",
@@ -78,12 +79,16 @@ def main(folder: str) -> None:
         .reset_index()
     )
 
+    x = np.logspace(1, 6, 100)
+    y = 0.75e-2 / x
+
     ax = sns.scatterplot(
         data=df_D[df_D["Definition"].isin(["Integral", "Unbounded"])],
         x="rate",
         y="D",
         hue="Definition",
     )
+    ax.plot(x, y, linestyle="dashed", color="grey")
     ax.set_xscale("log")
     ax.set_yscale("log")
     plt.show()
