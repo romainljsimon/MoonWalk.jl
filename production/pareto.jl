@@ -1,5 +1,4 @@
 using MoonWalk
-using ProgressMeter
 
 T = 10000000.0
 amplitude_small = 0.05
@@ -8,13 +7,15 @@ cage_size = 0.1
 nb_walkers = 1000
 τ = 10000.0
 
-αs = [1.5]
+αs = [1.2]
 
-prog = Progress(nb_walkers * length(αs); desc="Simulating walkers...")
-for α in αs
-    Threads.@threads for i in 1:nb_walkers
-        params = ParetoParameters(T, amplitude_small, amplitude_large, α, cage_size, τ)
-        simulation(params; path="pareto/$α/$i")
-        next!(prog)
-    end
-end
+total_number_of_simulations = nb_walkers * length(αs)
+i = parse(Int, ARGS[1])
+walker_id = (i - 1) % nb_walkers + 1
+α = αs[Int(floor((i - 1) / nb_walkers)) + 1]
+
+println("Processing simulation $i out of $total_number_of_simulations")
+println("Walker n°$walker_id, α = $α")
+
+params = ParetoParameters(T, amplitude_small, amplitude_large, α, cage_size, τ)
+simulation(params; path="pareto/$α/$walker_id")
