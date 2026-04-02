@@ -2,6 +2,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas>=3.0.1",
+#     "scipy>=1.17.1",
 #     "seaborn>=0.13.2",
 # ]
 # ///
