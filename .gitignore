@@ -3,4 +3,4 @@
 Manifest.toml
 *.pdf
 old/*
-examples/*/
+production/*/

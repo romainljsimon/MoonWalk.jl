@@ -16,7 +16,7 @@ import seaborn as sns
 
 sns.set(font_scale=2)
 
-methods = ["ExactRotation", "Integral", "Unbounded"]
+from utils import METHODS, get_rmsd_dataframe
 
 
 def main(folder: str) -> None:
@@ -24,21 +24,11 @@ def main(folder: str) -> None:
 
     df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
 
-    assert len(df) == len(files) * 45
+    assert len(df) == len(files) * 100
 
-    for method in methods:
-        df[f"{method}"] = (
-            df[f"{method}_x"] ** 2 + df[f"{method}_y"] ** 2 + df[f"{method}_z"] ** 2
-        )
+    id_columns = ["time"]
 
-    df_rmsd = (
-        df[["time"] + methods]
-        .melt(id_vars="time", value_vars=methods, var_name="Definition")
-        .groupby(["time", "Definition"])
-        .apply(lambda x: np.sqrt(np.mean(x)))
-        .rename("RMSD")
-        .reset_index()
-    )
+    df_rmsd = get_rmsd_dataframe(df, id_columns)
 
     # Theoretical value
     # Jump at times between [0, T], of an amplitude between [0, A]
@@ -46,7 +36,8 @@ def main(folder: str) -> None:
     T = 1
     A = 0.1 / 2
     x = np.logspace(1, 4, 1000)
-    y = np.sqrt(2 * A**2 * x / T)
+    D = 2 * A**2 / T
+    y = np.sqrt(D * x)
 
     ax = sns.lineplot(data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4)
     ax.plot(x, y, linestyle="dashed", color="grey")
@@ -58,6 +49,5 @@ def main(folder: str) -> None:
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        sys.exit(f"Usage: {sys.argv[0]} folder")
-    main(sys.argv[1])
+    folder = "../production/brownian/"
+    main(folder)
