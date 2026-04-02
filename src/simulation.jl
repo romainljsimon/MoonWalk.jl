@@ -7,7 +7,7 @@ function cage(Rₜ, dΩ, H)
     return dR
 end
 
-function simulation(params::RotationParameters; path::String="./", rng=Xoshiro(), number_of_points_in_output::Int=100, save_positions::Bool=false)
+function simulation(params::RotationParameters; path::String="./", rng::Xoshiro=Xoshiro(), number_of_points_in_output::Int=100, save_positions::Bool=false)
 
     mkpath(path)
     trajectory_file = joinpath(path, "traj.csv")
@@ -35,7 +35,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
         if isa(params, CageEscapeParameters)
             time_of_next_big_jump = rand(rng, Exponential(params.rate))
         else
-            time_of_next_big_jump = rand(rng, Pareto(params.α, params.τ))
+            time_of_next_big_jump = smooth_pareto(rng, params)
         end
         Rₜ = SMatrix{3,3,Float64}(I)
     end
@@ -140,7 +140,7 @@ function simulation(params::RotationParameters; path::String="./", rng=Xoshiro()
                 if isa(params, CageEscapeParameters)
                     time_of_next_big_jump = clock + rand(rng, Exponential(params.rate))
                 else
-                    time_of_next_big_jump = clock + rand(rng, Pareto(params.α, params.τ))
+                    time_of_next_big_jump = clock + smooth_pareto(rng, params)
                 end
 
             end

@@ -61,3 +61,16 @@ function euler_angles_from_rotation(R::AbstractMatrix)
     phi = atan(R[2,1]/cos(theta),R[1,1]/cos(theta))
     return psi,theta,phi
 end
+
+
+function smooth_pareto(rng::Xoshiro, params::ParetoParameters)
+
+    flat_contribution = params.α / (1 + params.α)
+
+    u = rand(rng)
+    if u < flat_contribution
+        return u / flat_contribution * params.τ
+    else
+        return rand(rng, Pareto(params.α, params.τ))
+    end
+end
