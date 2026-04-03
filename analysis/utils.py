@@ -6,7 +6,7 @@ import seaborn as sns
 METHODS = ["ExactRotation", "Integral", "Unbounded"]
 
 
-def get_rmsd_dataframe(df: pd.DataFrame, id_columns=list[str]) -> pd.DataFrame:
+def get_msd_dataframe(df: pd.DataFrame, id_columns=list[str]) -> pd.DataFrame:
     for method in METHODS:
         df[f"{method}"] = (
             df[f"{method}_x"] ** 2 + df[f"{method}_y"] ** 2 + df[f"{method}_z"] ** 2
@@ -16,8 +16,8 @@ def get_rmsd_dataframe(df: pd.DataFrame, id_columns=list[str]) -> pd.DataFrame:
         df[id_columns + METHODS]
         .melt(id_vars=id_columns, value_vars=METHODS, var_name="Definition")
         .groupby(id_columns + ["Definition"])
-        .apply(lambda x: np.sqrt(np.mean(x)))
-        .rename("RMSD")
+        .apply(lambda x: np.mean(x))
+        .rename("MSD")
         .reset_index()
     )
 
@@ -31,17 +31,25 @@ def plateau_from_cage_size(cage_size: float) -> float:
 
 
 def get_diffusion_coefficient(
-    ddf: pd.DataFrame, expected_value: float | None = None
+    ddf: pd.DataFrame,
+    expected_value: float | None = None,
+    plot: bool = False,
+    title: str | None = None,
 ) -> float:
-    ddf["MSD"] = ddf["RMSD"] ** 2
     ddf["MSD_over_time"] = ddf["MSD"] / ddf["time"]
     D = np.mean(ddf["MSD_over_time"][-7:])
 
-    # ax = sns.lineplot(data=ddf, x="time", y="MSD_over_time")
-    # ax.set_xscale("log")
-    # if expected_value:
-    #    ax.axhline(y=expected_value, color="grey", linestyle="dashed")
-    # ax.axhline(y=D, color="blue", linestyle="dashed")
-    # plt.show()
+    if plot:
+        # Only get the last 3 decades
+        df_to_plot = ddf[ddf["time"] >= ddf["time"].max() / 1000]
+        ax = sns.lineplot(data=df_to_plot, x="time", y="MSD_over_time")
+        ax.set_xscale("log")
+        if expected_value:
+            ax.axhline(y=expected_value, color="grey", linestyle="dashed")
+        ax.axhline(y=D, color="blue", linestyle="dashed")
+        if title:
+            plt.title(title)
+        plt.ylabel("MSD / t")
+        plt.show()
 
     return D
