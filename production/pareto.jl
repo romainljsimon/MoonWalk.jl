@@ -3,11 +3,11 @@ using MoonWalk
 T = 10000000.0
 amplitude_small = 0.05
 amplitude_large = 0.5
-cage_size = 0.1
+cage_size = 0.2
 nb_walkers = 1000
-τ = 10000.0
+τ = 100000.0
 
-αs = [1.2]
+αs = [0.7, 1.2]
 
 total_number_of_simulations = nb_walkers * length(αs)
 i = parse(Int, ARGS[1])

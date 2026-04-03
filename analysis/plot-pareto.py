@@ -39,7 +39,7 @@ def main(folder: str) -> None:
 
     df_rmsd = get_rmsd_dataframe(df, id_columns)
 
-    cage_size = 0.1
+    cage_size = 0.2
     plateau = plateau_from_cage_size(cage_size)
 
     # Diffusive with a dummy coefficient
@@ -48,35 +48,38 @@ def main(folder: str) -> None:
 
     df_rmsd["$\\alpha$"] = df_rmsd["alpha"].apply(str)
     # All alphas, unbounded
-    ax = sns.lineplot(
-        data=df_rmsd.query("Definition == 'Unbounded'"),
-        x="time",
-        y="RMSD",
-        hue="$\\alpha$",
-        linewidth=4,
-    )
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
-    ax.plot(x, y, linestyle="dashed", color="grey")
-    plt.title("Pareto")
-    plt.show()
+    #ax = sns.lineplot(
+    #    data=df_rmsd.query("Definition == 'Unbounded'"),
+    #    x="time",
+    #    y="RMSD",
+    #    hue="$\\alpha$",
+    #    linewidth=4,
+    #)
+    #ax.set_xscale("log")
+    #ax.set_yscale("log")
+    #ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    #ax.plot(x, y, linestyle="dashed", color="grey")
+    #plt.title("Pareto")
+    #plt.show()
 
     # one alpha, look at all definitions
-    alpha = 1.5
-    ax = sns.lineplot(
-        data=df_rmsd[df_rmsd["alpha"] == alpha],
-        x="time",
-        y="RMSD",
-        hue="Definition",
-        linewidth=4,
-    )
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
-    ax.axhline(y=np.sqrt((np.pi**2 + 6) / 3), color="grey", linestyle="dashed")
-    plt.title(f"Pareto - $\\alpha$ = {alpha}")
-    plt.show()
+    x = np.logspace(4, 7, 1000)
+    y = np.sqrt(0.5e-5 * x)
+    for alpha in set(df_rmsd["alpha"]):
+        ax = sns.lineplot(
+            data=df_rmsd[df_rmsd["alpha"] == alpha],
+            x="time",
+            y="RMSD",
+            hue="Definition",
+            linewidth=4,
+        )
+        ax.plot(x, y, linestyle="dashed", color="grey")
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+        ax.axhline(y=np.sqrt((np.pi**2 + 6) / 3), color="grey", linestyle="dashed")
+        plt.title(f"Pareto - $\\alpha$ = {alpha}")
+        plt.show()
 
 
 def plot_pareto_cumulative(alpha: float, tau: float) -> None:
