@@ -61,7 +61,7 @@ def main(folder: str) -> None:
 
     # one alpha, look at all definitions
     x = np.logspace(4, 7, 1000)
-    y = np.sqrt(0.5e-5 * x)
+    y = 0.5e-5 * x
     for alpha in set(df_msd["alpha"]):
         ax = sns.lineplot(
             data=df_msd[df_msd["alpha"] == alpha],
@@ -73,8 +73,8 @@ def main(folder: str) -> None:
         ax.plot(x, y, linestyle="dashed", color="grey")
         ax.set_xscale("log")
         ax.set_yscale("log")
-        ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
-        ax.axhline(y=np.sqrt((np.pi**2 + 6) / 3), color="grey", linestyle="dashed")
+        ax.axhline(y=plateau, color="black", linestyle="dashed")
+        ax.axhline(y=(np.pi**2 + 6) / 3, color="grey", linestyle="dashed")
         plt.title(f"Pareto - $\\alpha$ = {alpha}")
         plt.show()
 

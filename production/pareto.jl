@@ -1,6 +1,6 @@
-using MoonWalk
+using MoonWalk, Random
 
-T = 10000000.0
+T = 100000000.0
 amplitude_small = 0.05
 amplitude_large = 0.5
 cage_size = 0.2
@@ -18,4 +18,5 @@ println("Processing simulation $i out of $total_number_of_simulations")
 println("Walker n°$walker_id, α = $α")
 
 params = ParetoParameters(T, amplitude_small, amplitude_large, α, cage_size, τ)
-simulation(params; path="pareto/$α/$walker_id")
+rng = Xoshiro(i)
+simulation(params; path="pareto/$α/$walker_id", rng=rng)
