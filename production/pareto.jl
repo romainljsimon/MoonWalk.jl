@@ -1,4 +1,5 @@
-using MoonWalk, Random
+using MoonWalk
+using Random
 
 T = 100000000.0
 amplitude_small = 0.05

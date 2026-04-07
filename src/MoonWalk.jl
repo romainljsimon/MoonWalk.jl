@@ -4,7 +4,7 @@ using Random, Distributions, Plots, LinearAlgebra, StaticArrays
 
 export BrownianParameters, CageParameters, ParetoParameters, CageEscapeParameters
 export simulation
-export ExactRotation, IntegralDefinition, UnboundedDefinitione
+export ExactRotation, IntegralDefinition, UnboundedDefinition
 
 
 """

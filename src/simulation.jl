@@ -31,7 +31,7 @@ function simulation(params::RotationParameters; path::String="./", rng::Xoshiro=
 
     # Need to initialize for cage escape
     if isa(params, CageEscapeParameters) || isa(params, ParetoParameters)
-        time_of_next_small_jump = rand(rng)
+        time_of_next_small_jump = small_jump_distribution(rng)
         if isa(params, CageEscapeParameters)
             time_of_next_big_jump = rand(rng, Exponential(params.rate))
         else
@@ -48,7 +48,7 @@ function simulation(params::RotationParameters; path::String="./", rng::Xoshiro=
         # Pure diffusive
         if isa(params, BrownianParameters)
 
-            time_of_next_jump = clock + rand(rng)
+            time_of_next_jump = clock + small_jump_distribution(rng)
 
             while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
                 save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
@@ -70,7 +70,7 @@ function simulation(params::RotationParameters; path::String="./", rng::Xoshiro=
         # Trapped in a cage
         elseif isa(params, CageParameters)
 
-            time_of_next_jump = clock + rand(rng)
+            time_of_next_jump = clock + small_jump_distribution(rng)
 
             while time_of_next_jump > scheduler[next_index_of_scheduler_for_printing]
                 save_timestep(trajectory_file, angle_definitions, scheduler[next_index_of_scheduler_for_printing])
@@ -123,7 +123,7 @@ function simulation(params::RotationParameters; path::String="./", rng::Xoshiro=
                 end
 
                 clock = time_of_next_small_jump
-                time_of_next_small_jump += rand(rng)
+                time_of_next_small_jump += small_jump_distribution(rng)
 
                 Rₜ = Rₜ * dR
             # Larger jump
@@ -135,7 +135,7 @@ function simulation(params::RotationParameters; path::String="./", rng::Xoshiro=
                 Rₜ = SMatrix{3,3,Float64}(I)
 
                 clock = time_of_next_big_jump
-                time_of_next_small_jump = clock + rand(rng)
+                time_of_next_small_jump = clock + small_jump_distribution(rng)
 
                 if isa(params, CageEscapeParameters)
                     time_of_next_big_jump = clock + rand(rng, Exponential(params.rate))

@@ -16,7 +16,7 @@ import seaborn as sns
 
 sns.set(font_scale=2)
 
-from utils import METHODS, get_rmsd_dataframe
+from utils import METHODS, get_msd_dataframe
 
 
 def main(folder: str) -> None:
@@ -28,29 +28,27 @@ def main(folder: str) -> None:
 
     id_columns = ["time"]
 
-    df_rmsd = get_rmsd_dataframe(df, id_columns)
+    df_msd = get_msd_dataframe(df, id_columns)
 
     # Save in wide format
-    df_rmsd.pivot(
-        index="time", values="RMSD", columns="Definition"
-    ).reset_index().to_csv("brownian_rmsd.csv", sep=" ", index=False)
+    df_msd.pivot(index="time", values="MSD", columns="Definition").reset_index().to_csv(
+        "brownian_msd.csv", sep=" ", index=False
+    )
 
     # Theoretical value
-    # Jump at times between [0, T], of an amplitude between [0, A]
-    # RMSD is sqrt(A**2 * t / T)
-    T = 1
+    # Jump at times of mean T, of an amplitude between [0, A]
+    # MSD is sqrt(A**2 * t / T)
+    T = 1 / 1  # exponential of lambda: mean is 1/lambda
     A = 0.1 / 2
-    x = np.logspace(1, 4, 1000)
-    D = 2 * A**2 / T
-    y = np.sqrt(D * x)
+    x = np.logspace(-1, 4, 1000)
+    D = A**2 / T
+    y = D * x
 
-    ax = sns.scatterplot(
-        data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4
-    )
+    ax = sns.lineplot(data=df_msd, x="time", y="MSD", hue="Definition", linewidth=4)
     ax.plot(x, y, linestyle="dashed", color="grey")
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.axhline(y=np.sqrt((np.pi**2 + 6) / 3), color="grey", linestyle="dashed")
+    ax.axhline(y=(np.pi**2 + 6) / 3, color="grey", linestyle="dashed")
     plt.title("Brownian diffusion")
     plt.show()
 
