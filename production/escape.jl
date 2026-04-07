@@ -9,11 +9,14 @@ nb_walkers = 100
 
 rates = [300000.0, 100000.0, 30000.0, 10000.0, 3000.0, 1000.0, 300.0, 100.0, 30.0, 10.0]
 
-prog = Progress(nb_walkers * length(rates); desc="Simulating walkers...")
-Threads.@threads for rate in rates
-    for i in 1:nb_walkers
-        params = CageEscapeParameters(T, amplitude_small, amplitude_large, rate, cage_size)
-        simulation(params; path="escape/$rate/$i")
-        next!(prog)
-    end
-end
+total_number_of_simulations = nb_walkers * length(rates)
+i = parse(Int, ARGS[1])
+walker_id = (i - 1) % nb_walkers + 1
+rate = rates[Int(floor((i - 1) / nb_walkers)) + 1]
+
+println("Processing simulation $i out of $total_number_of_simulations")
+println("Walker n°$walker_id, rate = $rate")
+
+params = CageEscapeParameters(T, amplitude_small, amplitude_large, rate, cage_size)
+rng = Xoshiro(i)
+simulation(params; path="escape/$rate/$walker_id", rng=rng)

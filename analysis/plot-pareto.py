@@ -16,7 +16,7 @@ import seaborn as sns
 
 from utils import (
     METHODS,
-    get_rmsd_dataframe,
+    get_msd_dataframe,
     plateau_from_cage_size,
     get_diffusion_coefficient,
 )
@@ -37,46 +37,52 @@ def main(folder: str) -> None:
 
     id_columns = ["time", "alpha"]
 
-    df_rmsd = get_rmsd_dataframe(df, id_columns)
+    df_msd = get_msd_dataframe(df, id_columns)
 
-    cage_size = 0.1
+    cage_size = 0.2
     plateau = plateau_from_cage_size(cage_size)
 
-    # Diffusive with a dummy coefficient
-    x = np.logspace(3, 5, 1000)
-    y = np.sqrt(1e-5 * x)
+    df_msd["$\\alpha$"] = df_msd["alpha"].apply(str)
 
-    df_rmsd["$\\alpha$"] = df_rmsd["alpha"].apply(str)
     # All alphas, unbounded
-    ax = sns.lineplot(
-        data=df_rmsd.query("Definition == 'Unbounded'"),
-        x="time",
-        y="RMSD",
-        hue="$\\alpha$",
-        linewidth=4,
-    )
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
-    ax.plot(x, y, linestyle="dashed", color="grey")
-    plt.title("Pareto")
-    plt.show()
+    # ax = sns.lineplot(
+    #    data=df_msd.query("Definition == 'Unbounded'"),
+    #    x="time",
+    #    y="MSD",
+    #    hue="$\\alpha$",
+    #    linewidth=4,
+    # )
+    # ax.set_xscale("log")
+    # ax.set_yscale("log")
+    # ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    # ax.plot(x, y, linestyle="dashed", color="grey")
+    # plt.title("Pareto")
+    # plt.show()
 
     # one alpha, look at all definitions
-    alpha = 1.5
-    ax = sns.lineplot(
-        data=df_rmsd[df_rmsd["alpha"] == alpha],
-        x="time",
-        y="RMSD",
-        hue="Definition",
-        linewidth=4,
-    )
-    ax.set_xscale("log")
-    ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
-    ax.axhline(y=np.sqrt((np.pi**2 + 6) / 3), color="grey", linestyle="dashed")
-    plt.title(f"Pareto - $\\alpha$ = {alpha}")
-    plt.show()
+    x = np.logspace(4, 7, 1000)
+    y = 0.5e-5 * x
+    for alpha in set(df_msd["alpha"]):
+        ax = sns.lineplot(
+            data=df_msd[df_msd["alpha"] == alpha],
+            x="time",
+            y="MSD",
+            hue="Definition",
+            linewidth=4,
+        )
+        ax.plot(x, y, linestyle="dashed", color="grey")
+        ax.set_xscale("log")
+        ax.set_yscale("log")
+        ax.axhline(y=plateau, color="black", linestyle="dashed")
+        ax.axhline(y=(np.pi**2 + 6) / 3, color="grey", linestyle="dashed")
+        plt.title(f"Pareto - $\\alpha$ = {alpha}")
+        plt.show()
+
+        D = get_diffusion_coefficient(
+            df_msd[(df_msd["alpha"] == alpha) & (df_msd["Definition"] == "Integral")],
+            plot=True,
+            title=f"Pareto - $\\alpha$ = {alpha} - Integral method",
+        )
 
 
 def plot_pareto_cumulative(alpha: float, tau: float) -> None:

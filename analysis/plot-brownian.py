@@ -30,16 +30,23 @@ def main(folder: str) -> None:
 
     df_rmsd = get_rmsd_dataframe(df, id_columns)
 
+    # Save in wide format
+    df_rmsd.pivot(
+        index="time", values="RMSD", columns="Definition"
+    ).reset_index().to_csv("brownian_rmsd.csv", sep=" ", index=False)
+
     # Theoretical value
     # Jump at times between [0, T], of an amplitude between [0, A]
-    # RMSD is sqrt(A**2 * t / T**2)
+    # RMSD is sqrt(A**2 * t / T)
     T = 1
     A = 0.1 / 2
     x = np.logspace(1, 4, 1000)
     D = 2 * A**2 / T
     y = np.sqrt(D * x)
 
-    ax = sns.lineplot(data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4)
+    ax = sns.scatterplot(
+        data=df_rmsd, x="time", y="RMSD", hue="Definition", linewidth=4
+    )
     ax.plot(x, y, linestyle="dashed", color="grey")
     ax.set_xscale("log")
     ax.set_yscale("log")
