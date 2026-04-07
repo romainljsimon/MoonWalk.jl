@@ -10,4 +10,5 @@ i = parse(Int, ARGS[1])
 println("Processing simulation $i out of $nb_walkers")
 
 params = CageParameters(T, amplitude, cage_size)
-simulation(params; path="cage/$i")
+rng = Xoshiro(i)
+simulation(params; path="cage/$i", rng=rng)

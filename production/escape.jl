@@ -18,4 +18,5 @@ println("Processing simulation $i out of $total_number_of_simulations")
 println("Walker n°$walker_id, rate = $rate")
 
 params = CageEscapeParameters(T, amplitude_small, amplitude_large, rate, cage_size)
-simulation(params; path="escape/$rate/$walker_id")
+rng = Xoshiro(i)
+simulation(params; path="escape/$rate/$walker_id", rng=rng)

@@ -9,4 +9,5 @@ i = parse(Int, ARGS[1])
 println("Processing simulation $i out of $nb_walkers")
 
 params = BrownianParameters(T, amplitude)
-simulation(params; path="brownian/$i")
+rng = Xoshiro(i)
+simulation(params; path="brownian/$i", rng=rng)
