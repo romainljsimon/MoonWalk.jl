@@ -74,3 +74,8 @@ function smooth_pareto(rng::Xoshiro, params::ParetoParameters)
         return rand(rng, Pareto(params.α, params.τ))
     end
 end
+
+
+function small_jump_distribution(rng::Xoshiro)
+    return rand(rng, Exponential(1))
+end

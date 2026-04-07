@@ -1,5 +1,5 @@
 using MoonWalk
-using ProgressMeter
+using Random
 
 T = 10000.0
 amplitude = 0.1
