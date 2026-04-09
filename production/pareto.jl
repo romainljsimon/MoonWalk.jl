@@ -5,7 +5,7 @@ T = 100000000.0
 amplitude_small = 0.05
 amplitude_large = 0.5
 cage_size = 0.2
-nb_walkers = 1000
+nb_walkers = 10000
 τ = 100000.0
 
 αs = [0.7, 1.2]
