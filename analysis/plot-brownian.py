@@ -7,7 +7,6 @@
 # ///
 
 import glob
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,7 +15,7 @@ import seaborn as sns
 
 sns.set(font_scale=2)
 
-from utils import METHODS, get_msd_dataframe
+from utils import get_msd_dataframe, add_pound_key
 
 
 def main(folder: str) -> None:
@@ -34,6 +33,7 @@ def main(folder: str) -> None:
     df_msd.pivot(index="time", values="MSD", columns="Definition").reset_index().to_csv(
         "brownian_msd.csv", sep=" ", index=False
     )
+    add_pound_key("brownian_msd.csv")
 
     # Theoretical value
     # Jump at times of mean T, of an amplitude between [0, A]
