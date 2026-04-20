@@ -23,7 +23,7 @@ def main(folder: str) -> None:
 
     df = pd.concat([pd.read_csv(f) for f in files]).reset_index(drop=True)
 
-    # assert len(df) == len(files) * 45
+    assert len(df) == len(files) * 100, f"{len(df)}, {len(files)}"
 
     id_columns = ["time"]
 
@@ -44,7 +44,27 @@ def main(folder: str) -> None:
     plt.title("Cage")
     plt.show()
 
+    df_msd2 = df_msd
+    df_msd2["Amplitude"] = "0.1"
+
+    df_msd["Amplitude"] = "0.2"
+
+    ax = sns.lineplot(
+        data=pd.concat([df_msd, df_msd2])
+        .reset_index()
+        .query("Definition == 'Integral'"),
+        x="time",
+        y="MSD",
+        hue="Amplitude",
+        linewidth=4,
+    )
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.axhline(y=plateau_from_cage_size(cage_size), color="grey", linestyle="dashed")
+    plt.title("Cage")
+    plt.show()
+
 
 if __name__ == "__main__":
-    folder = "../production/cage/"
+    folder = "../production/cage-0.2/"
     main(folder)

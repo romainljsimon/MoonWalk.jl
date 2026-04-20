@@ -59,7 +59,7 @@ def main(folder: str) -> None:
     )
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    ax.axhline(y=plateau, color="black", linestyle="dashed")
     plt.title(f"Escape - rate = {rate}")
     plt.show()
 
@@ -90,7 +90,7 @@ def main(folder: str) -> None:
     add_pound_key("escape_D.csv")
 
     x = np.logspace(2, 7, 100)
-    y = 0.25e-1 / x / 3
+    y = 0.25e-1 / x
 
     ax = sns.scatterplot(
         data=df_D[df_D["Definition"].isin(["Integral", "Unbounded"])],

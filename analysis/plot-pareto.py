@@ -2,6 +2,7 @@
 # requires-python = ">=3.13"
 # dependencies = [
 #     "pandas>=3.0.1",
+#     "scipy>=1.17.1",
 #     "seaborn>=0.13.2",
 # ]
 # ///
@@ -9,7 +10,6 @@
 import glob
 
 import matplotlib.pyplot as plt
-from matplotlib.ticker import ScalarFormatter
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -36,61 +36,49 @@ def main(folder: str) -> None:
 
     df = pd.concat(df_list).reset_index(drop=True)
 
-    alpha = 1.2
-    # times = [1000.0, 43287.612810830615, 10000000.0]
-    times = [1e8, 1e7, 1e6, 1e5]
-    for time in times:
-        ddf = df[(df["alpha"] == alpha) & (df["time"] == time)][
-            ["Unbounded_x", "Unbounded_y", "Unbounded_z"]
-        ].melt()
+    alphas = set(df["alpha"])
 
-        x = np.linspace(ddf["value"].min(), ddf["value"].max(), num=1000)
-        y = scipy.stats.norm.pdf(x, loc=0, scale=np.std(ddf["value"]))
-
-        # ax = sns.histplot(
-        #    data=ddf,
-        #    x="value",
-        #    stat="density",
-        #    bins=40,
-        #    element="step",
-        #    fill=False,
-        #    linewidth=4,
-        # )
-
-        density, bin_edges, _ = ax.hist(ddf["value"], bins=30, density=True)
-        bin_centers = [
-            (bin_edges[i + 1] + bin_edges[i]) / 2 for i in range(len(bin_edges) - 1)
-        ]
-        plt.close()
-
-        df2 = pd.DataFrame({"angle": bin_centers, "density": density})
-
-        ax = sns.lineplot(data=df2, x="angle", y="density", linewidth=4)
-        ax.plot(x, y, linestyle="dashed", color="grey", linewidth=4)
-        ax.set_yscale("log")
-        plt.title(f"$\\alpha$ = {alpha}, time = {time:2.2g}")
-        plt.xlabel("Angle")
-        plt.show()
-        ax.set_yscale("log")
-        plt.show()
-
-    times = sorted([1e8, 1e7, 1e6, 1e5])
+    times = sorted([1e7, 1e6, 1e5, 1e4])
     ddf = df[(df["time"].isin(times))][
         ["time", "alpha", "Unbounded_x", "Unbounded_y", "Unbounded_z"]
     ].melt(id_vars=["time", "alpha"])[["time", "alpha", "value"]]
 
-    def plot_distrib(data, **kwargs):
-        x = np.linspace(data["value"].min(), data["value"].max(), num=1000)
-        y = scipy.stats.norm.pdf(x, loc=0, scale=np.std(data["value"]))
+    def compute_distrib(df, n_bins=40):
+        min_v, max_v = np.percentile(df["value"], [0.5, 99.5])
+        df = df[(df["value"] > min_v) & (df["value"] < max_v)]
 
-        density, bin_edges = np.histogram(data["value"], bins=30, density=True)
+        density, bin_edges = np.histogram(df["value"], bins=30, density=True)
         bin_centers = [
             (bin_edges[i + 1] + bin_edges[i]) / 2 for i in range(len(bin_edges) - 1)
         ]
 
-        df2 = pd.DataFrame({"angle": bin_centers, "density": density})
+        return pd.DataFrame({"angle": bin_centers, "density": density})
 
-        ax = sns.lineplot(data=df2, x="angle", y="density", linewidth=4)
+    df_distrib = (
+        ddf.groupby(["time", "alpha"])
+        .apply(compute_distrib)
+        .reset_index()
+        .drop(columns="level_2")
+    )
+
+    for time in times:
+        for alpha in alphas:
+            filename = f"distrib_{alpha}_{time:.0e}.csv"
+            df_distrib.query(f"time == {time}").query(
+                f"alpha == {alpha}"
+            ).reset_index()[["angle", "density"]].to_csv(filename, sep=" ", index=False)
+            add_pound_key(filename)
+
+    def plot_distrib(data, **kwargs):
+        alpha = data.iloc[0]["alpha"]
+        time = data.iloc[0]["time"]
+
+        df_local = df_distrib.query(f"alpha == {alpha}").query(f"time == {time}")
+
+        x = np.linspace(df_local["angle"].min(), df_local["angle"].max(), num=1000)
+        y = scipy.stats.norm.pdf(x, loc=0, scale=np.std(data["value"]))
+
+        ax = sns.lineplot(data=df_local, x="angle", y="density", linewidth=4)
         ax.plot(x, y, linestyle="dashed", color="grey", linewidth=4)
         # ax.set_yscale("log")
         # plt.title(f"$\\alpha$ = {alpha}, time = {time:2.2g}")
@@ -104,14 +92,10 @@ def main(folder: str) -> None:
         time = float(b.split("=")[1])
         return f"$\\alpha$ = {alpha}, time = {time:2.2g}"
 
-    g = sns.FacetGrid(ddf, col="time", row="alpha", sharex=False)
+    g = sns.FacetGrid(ddf, col="time", row="alpha", sharex=False)  # , sharey=False)
     # Loop through all axes in the FacetGrid
     for ax in g.axes.flat:
         ax.title.set_text(reformat_label(ax.title.get_text()))
-    # for t, time in zip(g.axes[0], times):
-    #    t.title.set_text(f"time = {time:2.2g}")
-    # for t, time in zip(g.axes[1], times):
-    #    t.title.set_text(f"time = {time:2.2g}")
     g.map_dataframe(plot_distrib)
     g.set(yscale="log")
     plt.tight_layout()
@@ -157,37 +141,6 @@ def main(folder: str) -> None:
             plot=True,
             title=f"Pareto - $\\alpha$ = {alpha} - Integral method",
         )
-
-
-def plot_pareto_cumulative(alpha: float, tau: float) -> None:
-    tau = 1000
-    x = np.linspace(tau, 20 * tau, num=1000)
-
-    df_list = []
-    for alpha in [0.5, 0.8, 1.5]:
-        prob = alpha * tau**alpha / (x ** (1 + alpha))
-        cumulative = np.array([sum(prob[:i]) for i in range(0, len(prob))]) / sum(prob)
-        df = pd.DataFrame({"t": x, "cumulative": cumulative})
-        df["$\\alpha$"] = str(alpha)
-        df_list.append(df)
-
-    df = pd.concat(df_list).reset_index(drop=True)
-
-    tau = 1000
-    x = np.linspace(1, 20, num=1000)
-
-    df_list = []
-    for alpha in [0.5, 0.8, 1.5]:
-        prob = alpha / (x ** (1 + alpha))
-        cumulative = np.array([sum(prob[:i]) for i in range(0, len(prob))]) / sum(prob)
-        df = pd.DataFrame({"t": x * tau, "cumulative": cumulative})
-        df["$\\alpha$"] = str(alpha)
-        df_list.append(df)
-
-    df = pd.concat(df_list).reset_index(drop=True)
-
-    sns.lineplot(data=df, x="t", y="cumulative", hue="$\\alpha$")
-    plt.show()
 
 
 if __name__ == "__main__":

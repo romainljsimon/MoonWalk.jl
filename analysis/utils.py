@@ -46,7 +46,7 @@ def get_diffusion_coefficient(
         ax.set_xscale("log")
         if expected_value:
             ax.axhline(y=expected_value, color="grey", linestyle="dashed")
-        ax.axhline(y=D, color="blue", linestyle="dashed")
+        ax.axhline(y=D * 3, color="blue", linestyle="dashed")
         if title:
             plt.title(title)
         plt.ylabel("MSD / t")
