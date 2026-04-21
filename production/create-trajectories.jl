@@ -18,8 +18,11 @@ simulation(params; path="trajectory/cage/", rng=rng, save_positions=true)
 # Cage escape
 rate = 400.0
 amplitude_large = 1
-T = 3000.0
+amplitude_small = 0.2
+T = 1500.0
 
-rng = Xoshiro(54) #   50 (with T=1300), 54 (with T=3000)
+# 50, 54
+#rng = Xoshiro(parse(Int, ARGS[1]))
+rng = Xoshiro(54)
 params = CageEscapeParameters(T, amplitude_small, amplitude_large, rate, cage_size)
 simulation(params; path="trajectory/escape", rng=rng, save_positions=true)

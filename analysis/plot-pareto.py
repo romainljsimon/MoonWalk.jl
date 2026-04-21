@@ -43,6 +43,8 @@ def main(folder: str) -> None:
         ["time", "alpha", "Unbounded_x", "Unbounded_y", "Unbounded_z"]
     ].melt(id_vars=["time", "alpha"])[["time", "alpha", "value"]]
 
+    ddf.query("alpha == 1.2").value_counts("time")
+
     def compute_distrib(df, n_bins=40):
         min_v, max_v = np.percentile(df["value"], [0.5, 99.5])
         df = df[(df["value"] > min_v) & (df["value"] < max_v)]

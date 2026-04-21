@@ -2,5 +2,6 @@
 *.ipynb
 Manifest.toml
 *.pdf
+*.csv
 old/*
 production/*/
