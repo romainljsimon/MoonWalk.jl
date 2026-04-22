@@ -43,7 +43,8 @@ def main(folder: str) -> None:
         ["time", "alpha", "Unbounded_x", "Unbounded_y", "Unbounded_z"]
     ].melt(id_vars=["time", "alpha"])[["time", "alpha", "value"]]
 
-    ddf.query("alpha == 1.2").value_counts("time")
+    print(ddf.query("alpha == 0.7").value_counts("time"))
+    print(ddf.query("alpha == 1.2").value_counts("time"))
 
     def compute_distrib(df, n_bins=40):
         min_v, max_v = np.percentile(df["value"], [0.5, 99.5])
@@ -82,11 +83,6 @@ def main(folder: str) -> None:
 
         ax = sns.lineplot(data=df_local, x="angle", y="density", linewidth=4)
         ax.plot(x, y, linestyle="dashed", color="grey", linewidth=4)
-        # ax.set_yscale("log")
-        # plt.title(f"$\\alpha$ = {alpha}, time = {time:2.2g}")
-        # plt.xlabel("Angle")
-        # ax.set_yscale("log")
-        # plt.show()
 
     def reformat_label(label):
         a, b = label.split("|")
@@ -140,7 +136,6 @@ def main(folder: str) -> None:
 
         D = get_diffusion_coefficient(
             df_msd[(df_msd["alpha"] == alpha) & (df_msd["Definition"] == "Integral")],
-            plot=True,
             title=f"Pareto - $\\alpha$ = {alpha} - Integral method",
         )
 

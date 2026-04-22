@@ -11,6 +11,11 @@ import pandas as pd
 import plotly.graph_objects as go
 
 
+# When plotting the trajectory on a sphere, big jumps are not displayed
+# This is because consecutive points are liked by a straight line
+# If the points are far apart, this line goes inside the sphere, and we
+# don't see it
+# So when this happens, we add some intermediary points
 def generate_intermediates(df):
     N_intermediates = 20
     data = []
@@ -65,7 +70,6 @@ def plot_trajectory(filepath):
             x=xs,
             y=ys,
             z=zs,
-            # colorscale=[[0.0, "#f7fbff"], [0.5, "#c6dbef"], [1.0, "#9ecae1"]],
             colorscale=[[0.0, "#9ecae1"], [1.0, "#9ecae1"]],
             # colorscale="Blues",
             showscale=False,

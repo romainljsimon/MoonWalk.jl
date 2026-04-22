@@ -36,13 +36,13 @@ def main(folder: str) -> None:
     add_pound_key("brownian_msd.csv")
 
     # Theoretical value
-    # Jump at times of mean T, of an amplitude between [0, A]
+    # Jump at times of rate tau, of [-A, A]
     # MSD is sqrt(A**2 * t / T)
-    T = 1 / 1  # exponential of lambda: mean is 1/lambda
-    A = 0.1 / 2
+    tau = 1  # exponential of lambda: mean is 1/lambda
+    A = 0.05
+    D_rot = A**2 / tau / 3
     x = np.logspace(-1, 4, 1000)
-    D = A**2 / T
-    y = D * x
+    y = 3 * D_rot * x
 
     ax = sns.lineplot(data=df_msd, x="time", y="MSD", hue="Definition", linewidth=4)
     ax.plot(x, y, linestyle="dashed", color="grey")
