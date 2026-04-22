@@ -37,7 +37,7 @@ def get_diffusion_coefficient(
     title: str | None = None,
 ) -> float:
     ddf["MSD_over_time"] = ddf["MSD"] / ddf["time"]
-    D = np.mean(ddf["MSD_over_time"][-7:])
+    D = np.mean(ddf["MSD_over_time"][-7:]) / 3
 
     if plot:
         # Only get the last 3 decades
@@ -46,10 +46,17 @@ def get_diffusion_coefficient(
         ax.set_xscale("log")
         if expected_value:
             ax.axhline(y=expected_value, color="grey", linestyle="dashed")
-        ax.axhline(y=D, color="blue", linestyle="dashed")
+        ax.axhline(y=D * 3, color="blue", linestyle="dashed")
         if title:
             plt.title(title)
         plt.ylabel("MSD / t")
         plt.show()
 
     return D
+
+
+def add_pound_key(filepath: str) -> None:
+    lines = open(filepath).readlines()
+    lines[0] = "# " + lines[0]
+    with open(filepath, "w") as f:
+        [f.write(line) for line in lines]

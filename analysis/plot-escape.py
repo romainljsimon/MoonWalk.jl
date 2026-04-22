@@ -8,7 +8,6 @@
 # ///
 
 import glob
-import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,10 +15,10 @@ import pandas as pd
 import seaborn as sns
 
 from utils import (
-    METHODS,
-    get_rmsd_dataframe,
+    get_msd_dataframe,
     plateau_from_cage_size,
     get_diffusion_coefficient,
+    add_pound_key,
 )
 
 sns.set(font_scale=2)
@@ -38,50 +37,60 @@ def main(folder: str) -> None:
 
     id_columns = ["time", "rate"]
 
-    df_rmsd = get_rmsd_dataframe(df, id_columns)
+    df_msd = get_msd_dataframe(df, id_columns)
 
-    cage_size = 0.1
+    df_msd.query("Definition == 'Unbounded'").pivot(
+        index="time", values="MSD", columns="rate"
+    ).reset_index().to_csv("escape_unbounded_msd.csv", sep=" ", index=False)
+    add_pound_key("escape_unbounded_msd.csv")
+
+    cage_size = 0.2
     plateau = plateau_from_cage_size(cage_size)
 
     # Largest rate, look at all definitions
-    rate = df_rmsd["rate"].max()
+    rate = df_msd["rate"].max()
     rate = 10000
     ax = sns.lineplot(
-        data=df_rmsd[df_rmsd["rate"] == rate],
+        data=df_msd[df_msd["rate"] == rate],
         x="time",
-        y="RMSD",
+        y="MSD",
         hue="Definition",
         linewidth=4,
     )
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    ax.axhline(y=plateau, color="black", linestyle="dashed")
     plt.title(f"Escape - rate = {rate}")
     plt.show()
 
     # All rates, unbounded
     ax = sns.lineplot(
-        data=df_rmsd.query("Definition == 'Unbounded'"),
+        data=df_msd.query("Definition == 'Unbounded'"),
         x="time",
-        y="RMSD",
+        y="MSD",
         hue="rate",
         linewidth=4,
     )
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.axhline(y=np.sqrt(plateau), color="black", linestyle="dashed")
+    ax.axhline(y=plateau, color="black", linestyle="dashed")
     plt.title("Escape")
     plt.show()
 
     df_D = (
-        df_rmsd.groupby(["rate", "Definition"])
+        df_msd.groupby(["rate", "Definition"])
         .apply(get_diffusion_coefficient)
         .rename("D")
         .reset_index()
     )
 
-    x = np.logspace(1, 6, 100)
-    y = 0.75e-2 / x
+    df_D.pivot(index="rate", values="D", columns="Definition").reset_index()[
+        ["rate", "Integral", "Unbounded"]
+    ].to_csv("escape_D.csv", sep=" ", index=False)
+    add_pound_key("escape_D.csv")
+
+    x = np.logspace(2, 7, 100)
+    y = 0.25e-1 / x
 
     ax = sns.scatterplot(
         data=df_D[df_D["Definition"].isin(["Integral", "Unbounded"])],
