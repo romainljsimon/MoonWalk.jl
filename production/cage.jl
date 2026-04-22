@@ -1,9 +1,9 @@
 using MoonWalk
 using Random
 
-T = 10000.0
-amplitude = 0.1
-cage_size = 1.0
+T = 100000.0
+amplitude = 0.2
+cage_size = 0.2
 nb_walkers = 10000
 
 i = parse(Int, ARGS[1])

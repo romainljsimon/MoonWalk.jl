@@ -1,7 +1,7 @@
 using MoonWalk
 using Random
 
-T = 10000.0
+T = 100000.0
 amplitude = 0.1
 nb_walkers = 10000
 
