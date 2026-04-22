@@ -2,8 +2,8 @@ using MoonWalk
 using Random
 
 T = 10000000.0
-amplitude_small = 0.05
-amplitude_large = 0.1
+amplitude_small = 0.2
+amplitude_large = 0.5
 cage_size = 0.2
 nb_walkers = 10000
 

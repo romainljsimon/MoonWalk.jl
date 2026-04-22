@@ -1,6 +1,6 @@
 module MoonWalk
 
-using Random, Distributions, Plots, LinearAlgebra, StaticArrays
+using Random, Distributions, LinearAlgebra, StaticArrays
 
 export BrownianParameters, CageParameters, ParetoParameters, CageEscapeParameters
 export simulation
